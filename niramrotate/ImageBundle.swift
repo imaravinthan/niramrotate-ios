@@ -7,9 +7,10 @@
 
 import Foundation
 
-struct ImageBundle: Codable, Identifiable {
+struct ImageBundle: Identifiable, Codable {
     let id: UUID
     var name: String
     var imageCount: Int
     var createdAt: Date
+    var thumbnailFilename: String?
 }

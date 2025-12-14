@@ -46,23 +46,22 @@ final class CreateBundleViewModel: ObservableObject {
                 let image = UIImage(data: data)
             else { continue }
 
-            let preview = PreviewItem(
-                id: UUID(),
-                image: image,
-                data: data
-            )
+            // prevent duplicates
+            if previews.contains(where: { $0.data == data }) { continue }
 
-            previews.append(preview)
+            previews.append(PreviewItem(id: UUID(),image: image, data: data))
         }
 
         selectedItems.removeAll()
     }
+
 
     // MARK: - Remove / Clear
 
     func removeImage(id: UUID) {
         previews.removeAll { $0.id == id }
     }
+
 
     func clearAll() {
         previews.removeAll()
@@ -85,8 +84,12 @@ final class CreateBundleViewModel: ObservableObject {
             }
 
             creationSucceeded = true
-            resultMessage = "Bundle \"\(bundleName)\" created successfully"
+            resultMessage = "Bundle \"\(bundleName)\" created"
             showResultAlert = true
+
+            // RESET STATE
+            bundleName = ""
+            previews.removeAll()
 
         } catch {
             creationSucceeded = false
@@ -96,5 +99,8 @@ final class CreateBundleViewModel: ObservableObject {
 
         isCreating = false
     }
+
+    
+    
 }
 

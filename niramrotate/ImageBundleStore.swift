@@ -85,6 +85,20 @@ final class ImageBundleStore {
 
         return files.filter { $0.pathExtension == "enc" }
     }
+    
+    func loadRandomDecryptedImage(for bundle: ImageBundle) -> UIImage? {
+        let images = listEncryptedImages(for: bundle)
+        guard let file = images.randomElement() else { return nil }
+
+        guard
+            let data = try? SecureFileStore.shared.loadDecrypted(from: file),
+            let image = UIImage(data: data)
+        else {
+            return nil
+        }
+
+        return image
+    }
 
 }
 
@@ -142,4 +156,16 @@ extension ImageBundleStore {
 
 }
 
+extension ImageBundleStore {
 
+    func loadThumbnail(for bundle: ImageBundle) -> UIImage? {
+        guard let filename = bundle.thumbnailFilename else { return nil }
+
+        let url = baseURL
+            .appendingPathComponent(bundle.id.uuidString)
+            .appendingPathComponent(filename)
+
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return UIImage(data: data)
+    }
+}

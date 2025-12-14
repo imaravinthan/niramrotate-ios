@@ -5,13 +5,16 @@
 //  Created by aravinthan.selvaraj on 14/12/25.
 //
 
-import Foundation
+import SwiftUI
+import UIKit
 import Combine
 
+@MainActor
 final class LibraryViewModel: ObservableObject {
+
     @Published var bundles: [ImageBundle] = []
-    @Published var sortOption: LibrarySortOption = .recent
     @Published var isGrid = true
+    @Published var sortOption: LibrarySortOption = .newest
 
     func loadBundles() {
         bundles = ImageBundleStore.shared.loadAllBundles()
@@ -20,14 +23,23 @@ final class LibraryViewModel: ObservableObject {
 
     func applySort() {
         switch sortOption {
-        case .recent:
+        case .newest:
             bundles.sort { $0.createdAt > $1.createdAt }
-        case .name:
-            bundles.sort { $0.name < $1.name }
-        case .nameDescend:
-            bundles.sort { $0.name > $1.name }
-        case .imageCount:
+        case .nameAZ:
+            bundles.sort { $0.name.lowercased() < $1.name.lowercased() }
+        case .nameZA:
+            bundles.sort { $0.name.lowercased() > $1.name.lowercased() }
+        case .mostImages:
             bundles.sort { $0.imageCount > $1.imageCount }
         }
     }
+
+    func thumbnail(for bundle: ImageBundle) -> UIImage? {
+        ImageBundleStore.shared.loadThumbnail(for: bundle)
+    }
+    
+    func wallpaper(for bundle: ImageBundle) -> UIImage? {
+        ImageBundleStore.shared.loadRandomDecryptedImage(for: bundle)
+    }
+
 }

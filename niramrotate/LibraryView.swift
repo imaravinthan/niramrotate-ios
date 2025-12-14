@@ -48,9 +48,16 @@ struct LibraryView: View {
     private var content: some View {
         if vm.isGrid {
             ScrollView {
-                LazyVGrid(columns: [.init(.adaptive(minimum: 160))]) {
+                LazyVStack(spacing: 20) {
                     ForEach(vm.bundles) { bundle in
-                        BundleGridCard(bundle: bundle)
+                        NavigationLink {
+                            BundleViewerView(bundle: bundle)
+                        } label: {
+                            BundleWallpaperCard(
+                                bundle: bundle,
+                                image: vm.wallpaper(for: bundle)
+                            )
+                        }
                     }
                 }
                 .padding()
