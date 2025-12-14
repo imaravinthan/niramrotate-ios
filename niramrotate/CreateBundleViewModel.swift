@@ -9,6 +9,12 @@ import SwiftUI
 import PhotosUI
 import Combine
 
+struct PreviewItem: Identifiable, Equatable {
+    let id: UUID
+    let image: UIImage
+    let data: Data
+}
+
 @MainActor
 final class CreateBundleViewModel: ObservableObject {
 
@@ -16,87 +22,79 @@ final class CreateBundleViewModel: ObservableObject {
     @Published var bundleName: String = ""
     @Published var selectedItems: [PhotosPickerItem] = []
 
-    // MARK: - Derived UI State
-    @Published private(set) var previewImages: [UIImage] = []
-    @Published private(set) var isCreating = false
-    @Published private(set) var errorMessage: String?
+    // MARK: - Preview State (SINGLE SOURCE OF TRUTH)
+    @Published private(set) var previews: [PreviewItem] = []
 
-    // Internal storage (never touch from View)
-    private var imageData: [Data] = []
+    // MARK: - UI State
+    @Published private(set) var isCreating = false
+    @Published var showResultAlert = false
+    @Published var resultMessage = ""
+    @Published var creationSucceeded = false
 
     var canCreate: Bool {
         !bundleName.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !imageData.isEmpty &&
+        !previews.isEmpty &&
         !isCreating
     }
-    
-    @MainActor
-    func appendImage(data: Data, image: UIImage) {
-        imageData.append(data)
-        previewImages.append(image)
-    }
-    
+
+    // MARK: - Image Picker Handling
+
     func appendPickedItems() async {
         for item in selectedItems {
-            guard let data = try? await item.loadTransferable(type: Data.self),
-                  let image = UIImage(data: data)
+            guard
+                let data = try? await item.loadTransferable(type: Data.self),
+                let image = UIImage(data: data)
             else { continue }
 
-            imageData.append(data)
-            previewImages.append(image)
+            let preview = PreviewItem(
+                id: UUID(),
+                image: image,
+                data: data
+            )
+
+            previews.append(preview)
         }
 
         selectedItems.removeAll()
     }
 
-
     // MARK: - Remove / Clear
-    @MainActor
-    func removeImage(at index: Int) {
-        guard index < imageData.count else { return }
-        imageData.remove(at: index)
-        previewImages.remove(at: index)
-    }
-    
-    @MainActor
-    func clearImages() {
-        imageData.removeAll()
-        previewImages.removeAll()
+
+    func removeImage(id: UUID) {
+        previews.removeAll { $0.id == id }
     }
 
-    @MainActor
     func clearAll() {
+        previews.removeAll()
         selectedItems.removeAll()
-        previewImages.removeAll()
-        imageData.removeAll()
         bundleName = ""
     }
 
     // MARK: - Create Bundle
 
-    func createBundle() async -> Bool {
-        guard canCreate else { return false }
+    func createBundle() async {
+        guard canCreate else { return }
 
         isCreating = true
-        defer { isCreating = false }
 
         do {
             let bundle = try ImageBundleStore.shared.createBundle(name: bundleName)
 
-            for data in imageData {
-                try ImageBundleStore.shared.addEncryptedImage(data, to: bundle)
+            for item in previews {
+                try ImageBundleStore.shared.addEncryptedImage(item.data, to: bundle)
             }
 
-            // Save thumbnail (first image only)
-//            if let first = imageData.first {
-//                try ImageBundleStore.shared.saveThumbnail(first, for: bundle)
-//            }
-            clearAll()
-            return true
+            creationSucceeded = true
+            resultMessage = "Bundle \"\(bundleName)\" created successfully"
+            showResultAlert = true
 
         } catch {
-            errorMessage = error.localizedDescription
-            return false
+            creationSucceeded = false
+            resultMessage = "Failed to create bundle"
+            showResultAlert = true
         }
+
+        isCreating = false
     }
 }
+

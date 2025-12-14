@@ -7,19 +7,11 @@
 
 import SwiftUI
 import PhotosUI
-import Combine
 
 struct CreateBundleView: View {
 
     @Environment(\.dismiss) private var dismiss
-
     @StateObject private var vm = CreateBundleViewModel()
-
-    private let gridColumns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
 
     var body: some View {
         NavigationStack {
@@ -43,16 +35,16 @@ struct CreateBundleView: View {
                         Task { await vm.appendPickedItems() }
                     }
 
-                    if vm.previewImages.count > 0 {
-                        Text("\(vm.previewImages.count) images selected")
+                    if !vm.previews.isEmpty {
+                        Text("\(vm.previews.count) images selected")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 // MARK: - Preview Grid
-                Section("Preview (\(vm.previewImages.count))") {
-                    if vm.previewImages.isEmpty {
+                Section("Preview (\(vm.previews.count))") {
+                    if vm.previews.isEmpty {
                         Text("No images selected")
                             .foregroundStyle(.secondary)
                     } else {
@@ -60,9 +52,9 @@ struct CreateBundleView: View {
                             columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3),
                             spacing: 12
                         ) {
-                            ForEach(vm.previewImages.indices, id: \.self) { index in
+                            ForEach(vm.previews) { item in
                                 ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: vm.previewImages[index])
+                                    Image(uiImage: item.image)
                                         .resizable()
                                         .scaledToFill()
                                         .frame(height: 110)
@@ -70,7 +62,7 @@ struct CreateBundleView: View {
                                         .clipped()
 
                                     Button {
-                                        vm.removeImage(at: index)
+                                        vm.removeImage(id: item.id)
                                     } label: {
                                         Image(systemName: "xmark.circle.fill")
                                             .foregroundStyle(.white)
@@ -87,20 +79,13 @@ struct CreateBundleView: View {
                         }
                     }
                 }
-                if let error = vm.errorMessage {
-                    Text(error)
-                        .foregroundColor(.red)
-                }
             }
             .navigationTitle("Create Bundle")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         Task {
-                            let success = await vm.createBundle()
-                            if success {
-                                dismiss()
-                            }
+                            await vm.createBundle()
                         }
                     } label: {
                         if vm.isCreating {
@@ -112,7 +97,22 @@ struct CreateBundleView: View {
                     .disabled(!vm.canCreate)
                 }
             }
+            .alert(
+                vm.creationSucceeded ? "Success" : "Error",
+                isPresented: $vm.showResultAlert
+            ) {
+                if vm.creationSucceeded {
+                    Button("Done") {
+                        vm.clearAll()
+                        dismiss()
+                    }
+                    .tint(.green)
+                } else {
+                    Button("OK", role: .cancel) {}
+                }
+            } message: {
+                Text(vm.resultMessage)
+            }
         }
     }
 }
-
