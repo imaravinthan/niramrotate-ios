@@ -17,8 +17,15 @@ struct VaultUnlockView: View {
         ZStack {
             VStack(spacing: 20) {
                 if isUnlocked {
-                    Text("Vault Unlocked")
-                        .font(.title)
+                    VStack(spacing: 16) {
+                        Text("Vault Unlocked")
+                            .font(.title)
+
+                        Button("Create Test Bundle") {
+                            testBundleCreation()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 } else {
                     Button("Unlock Vault") {
                         authenticate()
@@ -45,29 +52,51 @@ struct VaultUnlockView: View {
         let context = LAContext()
         var error: NSError?
 
-        if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
-            context.evaluatePolicy(
-                .deviceOwnerAuthentication,
-                localizedReason: "Unlock encrypted wallpaper vault"
-            ) { success, _ in
-                DispatchQueue.main.async {
-                    self.isUnlocked = success
-                    if !success {
-                        self.errorMessage = "Authentication failed"
-                    }
-                }
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            errorMessage = "Authentication not available"
+            return
+        }
+
+        context.evaluatePolicy(
+            .deviceOwnerAuthentication,
+            localizedReason: "Unlock encrypted wallpaper vault"
+        ) { success, _ in
+            DispatchQueue.main.async {
                 if success {
-                    DispatchQueue.global(qos: .userInitiated).async {
+                    self.isUnlocked = true
+                    self.errorMessage = nil
+
+                    DispatchQueue.global(qos: .utility).async {
                         _ = try? KeyStore.getOrCreateKey()
-//                        try? SecureFileStore.shared.saveEncrypted(
-//                            Data("test".utf8),
-//                            filename: "test.enc"
-//                        )
                     }
+
+                } else {
+                    self.errorMessage = "Authentication failed"
                 }
             }
-        } else {
-            errorMessage = "Authentication not available"
         }
     }
+
+    
+    private func testBundleCreation() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let bundle = try ImageBundleStore.shared.createBundle(name: "Test Bundle")
+
+                let sampleData = Data("hello-image".utf8)
+
+                try ImageBundleStore.shared.addEncryptedImage(
+                    sampleData,
+                    to: bundle
+                )
+
+                print("✅ Test bundle created:", bundle.id)
+
+            } catch {
+                print("❌ Bundle test failed:", error)
+            }
+        }
+    }
+
+
 }
