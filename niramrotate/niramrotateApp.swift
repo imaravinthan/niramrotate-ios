@@ -11,7 +11,9 @@ import SwiftUI
 struct NiramRotateApp: App {
     var body: some Scene {
         WindowGroup {
-            VaultUnlockView()
+//            VaultUnlockView()
+            BundleTestView()
+
         }
     }
 }
