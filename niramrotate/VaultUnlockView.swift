@@ -14,21 +14,25 @@ struct VaultUnlockView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        VStack(spacing: 20) {
-            if isUnlocked {
-                Text("Vault Unlocked")
-                    .font(.title)
-            } else {
-                Button("Unlock Vault") {
-                    authenticate()
-                }
+        ZStack {
+            VStack(spacing: 20) {
+                if isUnlocked {
+                    Text("Vault Unlocked")
+                        .font(.title)
+                } else {
+                    Button("Unlock Vault") {
+                        authenticate()
+                    }
 
-                if let errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .font(.caption)
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                    }
                 }
             }
+
+            ScreenShieldView()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active {
