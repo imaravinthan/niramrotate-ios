@@ -56,6 +56,15 @@ struct VaultUnlockView: View {
                         self.errorMessage = "Authentication failed"
                     }
                 }
+                if success {
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        _ = try? KeyStore.getOrCreateKey()
+//                        try? SecureFileStore.shared.saveEncrypted(
+//                            Data("test".utf8),
+//                            filename: "test.enc"
+//                        )
+                    }
+                }
             }
         } else {
             errorMessage = "Authentication not available"
