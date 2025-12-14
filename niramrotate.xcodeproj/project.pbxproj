@@ -10,9 +10,22 @@
 		90E8111A2EEE982000CC02C9 /* niramrotate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = niramrotate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		90E8112C2EEE9BF400CC02C9 /* Exceptions for "niramrotate" folder in "niramrotate" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 90E811192EEE982000CC02C9 /* niramrotate */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		90E8111C2EEE982000CC02C9 /* niramrotate */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				90E8112C2EEE9BF400CC02C9 /* Exceptions for "niramrotate" folder in "niramrotate" target */,
+			);
 			path = niramrotate;
 			sourceTree = "<group>";
 		};
@@ -256,6 +269,8 @@
 				DEVELOPMENT_TEAM = 5S8KPX5L5J;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = niramrotate/Info.plist;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock encrypted wallpaper vault";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +303,8 @@
 				DEVELOPMENT_TEAM = 5S8KPX5L5J;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = niramrotate/Info.plist;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Unlock encrypted wallpaper vault";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

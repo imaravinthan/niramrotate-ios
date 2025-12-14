@@ -8,10 +8,10 @@
 import SwiftUI
 
 @main
-struct niramrotateApp: App {
+struct NiramRotateApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            VaultUnlockView()
         }
     }
 }
