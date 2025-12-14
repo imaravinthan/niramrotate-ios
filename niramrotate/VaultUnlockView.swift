@@ -17,15 +17,7 @@ struct VaultUnlockView: View {
         ZStack {
             VStack(spacing: 20) {
                 if isUnlocked {
-                    VStack(spacing: 16) {
-                        Text("Vault Unlocked")
-                            .font(.title)
-
-                        Button("Create Test Bundle") {
-                            testBundleCreation()
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
+                    BundleListView()
                 } else {
                     Button("Unlock Vault") {
                         authenticate()

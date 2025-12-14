@@ -12,8 +12,7 @@ struct NiramRotateApp: App {
     var body: some Scene {
         WindowGroup {
 //            VaultUnlockView()
-            BundleTestView()
-
+            MainTabView()
         }
     }
 }

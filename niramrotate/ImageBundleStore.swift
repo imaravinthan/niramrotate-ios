@@ -47,6 +47,31 @@ final class ImageBundleStore {
 
         return bundle
     }
+    
+    func loadAllBundles() -> [ImageBundle] {
+        let fm = FileManager.default
+
+        guard let bundleFolders = try? fm.contentsOfDirectory(
+            at: baseURL,
+            includingPropertiesForKeys: nil
+        ) else {
+            return []
+        }
+
+        var bundles: [ImageBundle] = []
+
+        for folder in bundleFolders {
+            let manifestURL = folder.appendingPathComponent("manifest.json")
+
+            if let data = try? Data(contentsOf: manifestURL),
+               let bundle = try? JSONDecoder().decode(ImageBundle.self, from: data) {
+                bundles.append(bundle)
+            }
+        }
+
+        return bundles.sorted { $0.createdAt > $1.createdAt }
+    }
+
 }
 
 extension ImageBundleStore {
