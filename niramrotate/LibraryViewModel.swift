@@ -24,6 +24,8 @@ final class LibraryViewModel: ObservableObject {
             bundles.sort { $0.createdAt > $1.createdAt }
         case .name:
             bundles.sort { $0.name < $1.name }
+        case .nameDescend:
+            bundles.sort { $0.name > $1.name }
         case .imageCount:
             bundles.sort { $0.imageCount > $1.imageCount }
         }

@@ -8,5 +8,6 @@
 enum LibrarySortOption: String, CaseIterable {
     case recent = "Recent"
     case name = "Name (A–Z)"
+    case nameDescend = "Name (Z-A)"
     case imageCount = "Most Images"
 }

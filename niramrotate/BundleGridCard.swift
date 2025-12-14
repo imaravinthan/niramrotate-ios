@@ -8,24 +8,32 @@
 import SwiftUI
 
 struct BundleGridCard: View {
+
     let bundle: ImageBundle
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.3))
-                .frame(height: 120)
-                .overlay(
-                    Text("\(bundle.imageCount)")
-                        .font(.largeTitle.bold())
-                )
+
+            ZStack {
+                if let image = ImageBundleStore.shared.loadRandomThumbnail(for: bundle) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Color.gray.opacity(0.25)
+                }
+            }
+            .frame(height: 130)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .clipped()
 
             Text(bundle.name)
                 .font(.headline)
 
             Text("\(bundle.imageCount) images")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
         }
     }
 }
+

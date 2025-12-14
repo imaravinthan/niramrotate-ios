@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 final class ImageBundleStore {
 
@@ -71,6 +72,19 @@ final class ImageBundleStore {
 
         return bundles.sorted { $0.createdAt > $1.createdAt }
     }
+    
+    func listEncryptedImages(for bundle: ImageBundle) -> [URL] {
+        let imagesURL = baseURL
+            .appendingPathComponent(bundle.id.uuidString)
+            .appendingPathComponent("images")
+
+        let files = (try? FileManager.default.contentsOfDirectory(
+            at: imagesURL,
+            includingPropertiesForKeys: nil
+        )) ?? []
+
+        return files.filter { $0.pathExtension == "enc" }
+    }
 
 }
 
@@ -89,33 +103,43 @@ extension ImageBundleStore {
             withIntermediateDirectories: true
         )
 
-        let fileURL = imagesURL.appendingPathComponent(
-            UUID().uuidString + ".enc"
-        )
+        let filename = UUID().uuidString + ".enc"
+        let fileURL = imagesURL.appendingPathComponent(filename)
 
-        try SecureFileStore.shared.saveEncrypted(
-            data,
-            to: fileURL
-        )
+        // 1. Save encrypted image
+        try SecureFileStore.shared.saveEncrypted(data, to: fileURL)
 
-        updateManifest(bundle, increment: 1)
+        // 2. Update manifest ONCE
+        let manifestURL = bundleURL.appendingPathComponent("manifest.json")
+        let manifestData = try Data(contentsOf: manifestURL)
+        var updatedBundle = try JSONDecoder().decode(ImageBundle.self, from: manifestData)
+
+        updatedBundle.imageCount += 1
+
+        let updatedData = try JSONEncoder().encode(updatedBundle)
+        try updatedData.write(to: manifestURL, options: .atomic)
     }
-
-
-
-    private func updateManifest(
-        _ bundle: ImageBundle,
-        increment: Int
-    ) {
-        let manifestURL = baseURL
+    
+    func loadRandomThumbnail(for bundle: ImageBundle) -> UIImage? {
+        let imagesURL = baseURL
             .appendingPathComponent(bundle.id.uuidString)
-            .appendingPathComponent("manifest.json")
+            .appendingPathComponent("images")
 
-        var updated = bundle
-        updated.imageCount += increment
-
-        if let data = try? JSONEncoder().encode(updated) {
-            try? data.write(to: manifestURL)
+        guard
+            let files = try? FileManager.default.contentsOfDirectory(
+                at: imagesURL,
+                includingPropertiesForKeys: nil
+            ),
+            let random = files.filter({ $0.pathExtension == "enc" }).randomElement(),
+            let decrypted = try? SecureFileStore.shared.loadDecrypted(from: random),
+            let image = UIImage(data: decrypted)
+        else {
+            return nil
         }
+
+        return image
     }
+
 }
+
+

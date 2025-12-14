@@ -8,6 +8,7 @@
 import Foundation
 import CryptoKit
 import Security
+import UIKit
 
 final class SecureFileStore {
 
@@ -16,19 +17,30 @@ final class SecureFileStore {
 
     // MARK: - Public API
 
-    // MARK: - Public API
-
     func saveEncrypted(_ data: Data, to url: URL) throws {
         let key = try encryptionKey()
         let sealedBox = try AES.GCM.seal(data, using: key)
         try sealedBox.combined!.write(to: url, options: .completeFileProtection)
     }
-
+    
     func loadDecrypted(from url: URL) throws -> Data {
         let key = try encryptionKey()
         let encrypted = try Data(contentsOf: url)
         let box = try AES.GCM.SealedBox(combined: encrypted)
         return try AES.GCM.open(box, using: key)
+    }
+
+    func loadDecryptedImage(from url: URL) throws -> UIImage {
+        let key = try encryptionKey()
+        let encrypted = try Data(contentsOf: url)
+        let box = try AES.GCM.SealedBox(combined: encrypted)
+        let data = try AES.GCM.open(box, using: key)
+
+        guard let image = UIImage(data: data) else {
+            throw NSError(domain: "InvalidImage", code: -1)
+        }
+
+        return image
     }
 
     // MARK: - Key Derivation
@@ -47,4 +59,5 @@ final class SecureFileStore {
         let hash = SHA256.hash(data: publicKeyData)
         return SymmetricKey(data: hash)
     }
+    
 }
