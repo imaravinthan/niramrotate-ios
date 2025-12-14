@@ -6,9 +6,11 @@
 //
 
 import SwiftUI
+import AppIntents
 
 @main
 struct NiramRotateApp: App {
+    
     var body: some Scene {
         WindowGroup {
 //            VaultUnlockView()

@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct BundleWallpaperCard: View {
+
     let bundle: ImageBundle
     let image: UIImage?
 
@@ -18,7 +20,7 @@ struct BundleWallpaperCard: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Color.gray.opacity(0.3)
+                Color.gray.opacity(0.25)
             }
 
             LinearGradient(
@@ -27,16 +29,19 @@ struct BundleWallpaperCard: View {
                 endPoint: .bottom
             )
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
+                Image(uiImage: image!)
+                    .resizable()
+                    .scaledToFill()
+
                 Text(bundle.name)
                     .font(.headline)
-                Text("\(bundle.imageCount) images")
-                    .font(.caption)
-                    .opacity(0.8)
+                    .padding(.horizontal, 8)
             }
+            .foregroundColor(.white)
             .padding()
         }
-        .frame(height: 220) // FULL wallpaper feel
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .frame(height: 220)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }

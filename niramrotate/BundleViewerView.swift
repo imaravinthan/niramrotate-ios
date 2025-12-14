@@ -7,8 +7,8 @@
 import SwiftUI
 
 struct BundleViewerView: View {
-    let bundle: ImageBundle
 
+    let bundle: ImageBundle
     @State private var images: [UIImage] = []
     @State private var index = 0
 
@@ -17,20 +17,17 @@ struct BundleViewerView: View {
             if !images.isEmpty {
                 Image(uiImage: images[index])
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
                     .ignoresSafeArea()
                     .onTapGesture {
                         index = (index + 1) % images.count
                     }
+            } else {
+                ProgressView()
             }
         }
         .onAppear {
-            images = ImageBundleStore.shared
-                .listEncryptedImages(for: bundle)
-                .compactMap {
-                    try? SecureFileStore.shared.loadDecrypted(from: $0)
-                }
-                .compactMap { UIImage(data: $0) }
+            images = ImageBundleStore.shared.allImages(for: bundle)
         }
     }
 }

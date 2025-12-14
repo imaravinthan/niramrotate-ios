@@ -46,26 +46,22 @@ struct LibraryView: View {
 
     @ViewBuilder
     private var content: some View {
-        if vm.isGrid {
-            ScrollView {
-                LazyVStack(spacing: 20) {
-                    ForEach(vm.bundles) { bundle in
-                        NavigationLink {
-                            BundleViewerView(bundle: bundle)
-                        } label: {
-                            BundleWallpaperCard(
-                                bundle: bundle,
-                                image: vm.wallpaper(for: bundle)
-                            )
-                        }
+        ScrollView {
+            LazyVStack(spacing: 24) {
+                ForEach(vm.bundles) { bundle in
+                    NavigationLink {
+                        BundleViewerView(bundle: bundle)
+                    } label: {
+                        BundleWallpaperCard(
+                            bundle: bundle,
+                            image: vm.wallpaper(for: bundle)
+                        )
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding()
             }
-        } else {
-            List(vm.bundles) { bundle in
-                BundleListRow(bundle: bundle)
-            }
+            .padding()
         }
     }
+
 }

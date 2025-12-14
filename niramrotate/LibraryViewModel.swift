@@ -34,12 +34,13 @@ final class LibraryViewModel: ObservableObject {
         }
     }
 
-    func thumbnail(for bundle: ImageBundle) -> UIImage? {
-        ImageBundleStore.shared.loadThumbnail(for: bundle)
-    }
+//    func thumbnail(for bundle: ImageBundle) -> UIImage? {
+//        ImageBundleStore.shared.loadThumbnail(for: bundle)
+//    }
     
     func wallpaper(for bundle: ImageBundle) -> UIImage? {
-        ImageBundleStore.shared.loadRandomDecryptedImage(for: bundle)
+        ImageBundleStore.shared.loadRandomDecryptedImage(forID: bundle.id)
     }
+
 
 }

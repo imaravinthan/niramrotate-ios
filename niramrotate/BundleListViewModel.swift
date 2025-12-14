@@ -16,9 +16,9 @@ final class BundleListViewModel: ObservableObject {
         let bundles = ImageBundleStore.shared.loadAllBundles()
 
         if let first = bundles.first {
-            let images = ImageBundleStore.shared.listEncryptedImages(for: first)
+            let images = ImageBundleStore.shared.listEncryptedImages(forID: first.id)
             if let url = images.first {
-                let img = try? SecureFileStore.shared.loadDecryptedImage(from: url)
+                let img = try? SecureFileStore.shared.loadDecrypted(from: url)
                 print("Decrypted image:", img != nil)
             }
         }

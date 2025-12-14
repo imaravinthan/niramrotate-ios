@@ -12,5 +12,5 @@ struct ImageBundle: Identifiable, Codable {
     var name: String
     var imageCount: Int
     var createdAt: Date
-    var thumbnailFilename: String?
+    var lastIndex: Int?
 }

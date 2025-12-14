@@ -9,19 +9,21 @@ import SwiftUI
 struct BundleGridCell: View {
 
     let bundle: ImageBundle
-    let thumbnail: UIImage?
 
     var body: some View {
-        VStack {
-            if let image = ImageBundleStore.shared.loadRandomThumbnail(for: bundle) {
+        ZStack {
+            if let image = ImageBundleStore.shared
+                .loadRandomDecryptedImage(forID: bundle.id) {
+
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
             } else {
-                Color.gray.opacity(0.3)
+                Color.black.opacity(0.25)
             }
         }
-        .frame(height: 140)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .frame(height: 220)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .clipped()
     }
 }
