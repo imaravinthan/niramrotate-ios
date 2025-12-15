@@ -157,6 +157,28 @@ final class ImageBundleStore {
         return image
     }
     
+    func deleteEncryptedImage(
+        _ url: URL,
+        from bundle: ImageBundle
+    ) throws {
+
+        let fm = FileManager.default
+        try fm.removeItem(at: url)
+
+        // update manifest
+        let manifestURL = baseURL
+            .appendingPathComponent(bundle.id.uuidString)
+            .appendingPathComponent("manifest.json")
+
+        let data = try Data(contentsOf: manifestURL)
+        var updated = try JSONDecoder().decode(ImageBundle.self, from: data)
+        updated.imageCount = max(0, updated.imageCount - 1)
+
+        let encoded = try JSONEncoder().encode(updated)
+        try encoded.write(to: manifestURL, options: .atomic)
+    }
+
+    
     private func updateLastIndex(bundleID: UUID, index: Int) {
         let manifestURL = baseURL
             .appendingPathComponent(bundleID.uuidString)
@@ -214,4 +236,38 @@ final class ImageBundleStore {
             $0.name.lowercased() == name.lowercased()
         }
     }
+}
+
+extension ImageBundleStore {
+
+    /// Deletes ONLY bundles (images + manifests)
+    func deleteAllBundles() throws {
+        let fm = FileManager.default
+
+        if fm.fileExists(atPath: baseURL.path) {
+            try fm.removeItem(at: baseURL)
+        }
+
+        try fm.createDirectory(
+            at: baseURL,
+            withIntermediateDirectories: true
+        )
+    }
+    
+    func clearAllBundles() throws {
+        let fm = FileManager.default
+
+        let bundlesURL = baseURL
+
+        let contents = try fm.contentsOfDirectory(
+            at: bundlesURL,
+            includingPropertiesForKeys: nil
+        )
+
+        for url in contents {
+            try fm.removeItem(at: url)
+        }
+    }
+    
+
 }

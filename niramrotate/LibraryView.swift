@@ -43,25 +43,30 @@ struct LibraryView: View {
                 }
         }
     }
-
+    
     @ViewBuilder
     private var content: some View {
-        ScrollView {
-            LazyVStack(spacing: 24) {
-                ForEach(vm.bundles) { bundle in
-                    NavigationLink {
-                        BundleViewerView(bundle: bundle)
-                    } label: {
-                        BundleWallpaperCard(
-                            bundle: bundle,
-                            image: vm.wallpaper(for: bundle)
-                        )
+        if vm.bundles.isEmpty {
+            ContentUnavailableView(
+                "No wallpapers",
+                systemImage: "photo",
+                description: Text("Create a bundle to get started")
+            )
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    ForEach(vm.bundles) { bundle in
+                        NavigationLink {
+                            BundleViewerView(bundle: bundle)
+                        } label: {
+                            BundleLibraryRow(bundle: bundle)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding()
             }
-            .padding()
         }
     }
+
 
 }

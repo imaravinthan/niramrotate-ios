@@ -10,8 +10,24 @@ import Foundation
 import UIKit
 import ExtensionFoundation
 
-//@main
+enum WallpaperTarget: String, AppEnum {
+    case lock
+    case home
+    case both
+
+    static var typeDisplayRepresentation =
+        TypeDisplayRepresentation(name: "Wallpaper Target")
+
+    static var caseDisplayRepresentations: [Self: DisplayRepresentation] = [
+        .lock: .init(title: "Lock Screen"),
+        .home: .init(title: "Home Screen"),
+        .both: .init(title: "Both")
+    ]
+}
+
+
 struct WallyIntents: AppIntentsExtension {}
+
 
 struct ImageBundleEntity: AppEntity, Identifiable, Hashable {
 
@@ -58,6 +74,10 @@ struct GetNextWallpaperIntent: AppIntent {
 
     @Parameter(title: "Bundle")
     var bundle: ImageBundleEntity
+    
+    @Parameter(title: "Apply To")
+    var target: WallpaperTarget
+
 
     func perform() async throws -> some IntentResult & ReturnsValue<IntentFile> {
 
