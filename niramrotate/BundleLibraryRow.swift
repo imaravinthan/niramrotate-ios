@@ -47,23 +47,30 @@ import SwiftUI
 struct BundleLibraryRow: View {
     let bundle: ImageBundle
 
+    @EnvironmentObject private var settings: AppSettings
+
     var body: some View {
         HStack(spacing: 12) {
 
-            // Thumbnail
-            if let image = ImageBundleStore.shared.loadRandomDecryptedImage(forID: bundle.id) {
+            if let image = ImageBundleStore.shared
+                .loadRandomDecryptedImage(forID: bundle.id) {
+
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
                     .frame(width: 60, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .blur(
+                        radius: bundle.isNSFW && settings.blurNSFWBundleEnabled
+                        ? 20
+                        : 0
+                    )
             } else {
                 Color.gray.opacity(0.3)
                     .frame(width: 60, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
 
-            // Meta
             VStack(alignment: .leading, spacing: 4) {
                 Text(bundle.name)
                     .font(.headline)

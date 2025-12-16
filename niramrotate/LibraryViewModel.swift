@@ -9,39 +9,43 @@ import SwiftUI
 import UIKit
 import Combine
 
+
 @MainActor
 final class LibraryViewModel: ObservableObject {
 
     @Published var bundles: [ImageBundle] = []
-    @Published var isGrid = true
-    @Published var sortOption: LibrarySortOption = .newest
     @Published var selectedIDs: Set<ImageBundle.ID> = []
-    @Published var showArchived = false
+    @Published var isSelectionMode = false
+    @Published var sortOption: LibrarySortOption = .newest
 
-    
-    var isAllSelected: Bool {
-            !bundles.isEmpty && selectedIDs.count == bundles.count
-        }
-    
     var active: [ImageBundle] {
-            bundles.filter { !$0.isArchived }
-        }
+        bundles.filter { !$0.isArchived }
+    }
 
     var archived: [ImageBundle] {
         bundles.filter { $0.isArchived }
     }
-    
+
+    var selectedBundles: [ImageBundle] {
+        bundles.filter { selectedIDs.contains($0.id) }
+    }
+
+    // MARK: - Load
     func loadBundles() {
         bundles = ImageBundleStore.shared.loadAllBundles()
         applySort()
     }
-//    func loadBundles() {
-//        bundles = ImageBundleStore.shared
-//            .loadAllBundles()
-//            .filter { !$0.isArchived }
-//    }
 
+    var visibleBundles: [ImageBundle] {
+        bundles.filter { bundle in
+            if bundle.isNSFW && !AppSettings.shared.showNSFWEnabled {
+                return false
+            }
+            return !bundle.isArchived
+        }
+    }
 
+    
     func applySort() {
         switch sortOption {
         case .newest:
@@ -55,43 +59,14 @@ final class LibraryViewModel: ObservableObject {
         }
     }
 
-//    func thumbnail(for bundle: ImageBundle) -> UIImage? {
-//        ImageBundleStore.shared.loadThumbnail(for: bundle)
-//    }
-    
-    func wallpaper(for bundle: ImageBundle) -> UIImage? {
-        ImageBundleStore.shared.loadRandomDecryptedImage(forID: bundle.id)
-    }
-    
-    func toggleSelectAll() {
-            if isAllSelected {
-                selectedIDs.removeAll()
-            } else {
-                selectedIDs = Set(bundles.map { $0.id })
-            }
-        }
-    
-//    func archive(_ bundle: ImageBundle) {
-//        var updated = bundle
-//        updated.isArchived = true
-//        try? ImageBundleStore.shared.updateBundle(updated)
-//        loadBundles()
-//    }
-//    
-//    func unarchive(_ bundle: ImageBundle) {
-//            var updated = bundle
-//            updated.isArchived = false
-//            try? ImageBundleStore.shared.updateBundle(updated)
-//            loadBundles()
-//    }
-    
+    // MARK: - Single actions
     func archive(_ bundle: ImageBundle) {
-            update(bundle) { $0.isArchived = true }
-        }
+        update(bundle) { $0.isArchived = true }
+    }
 
-        func unarchive(_ bundle: ImageBundle) {
-            update(bundle) { $0.isArchived = false }
-        }
+    func unarchive(_ bundle: ImageBundle) {
+        update(bundle) { $0.isArchived = false }
+    }
 
     func delete(_ bundle: ImageBundle) {
         try? ImageBundleStore.shared.delete(bundle)
@@ -102,17 +77,53 @@ final class LibraryViewModel: ObservableObject {
         BundleExporter.export(bundle)
     }
 
-    private func update(
-            _ bundle: ImageBundle,
-            change: (inout ImageBundle) -> Void
-        ) {
-            do {
-                var updated = bundle
-                change(&updated)
-                try ImageBundleStore.shared.update(updated)
-                loadBundles()
-            } catch {
-                print("❌ Update failed:", error)
-            }
+    // MARK: - Selection
+    func toggleSelection(_ bundle: ImageBundle) {
+        if selectedIDs.contains(bundle.id) {
+            selectedIDs.remove(bundle.id)
+        } else {
+            selectedIDs.insert(bundle.id)
         }
+    }
+
+    func clearSelection() {
+        selectedIDs.removeAll()
+        isSelectionMode = false
+    }
+
+    // MARK: - Bulk
+    func bulkArchive() {
+        selectedBundles.forEach {
+            update($0) { $0.isArchived = true }
+        }
+        clearSelection()
+    }
+
+    func bulkDelete() {
+        selectedBundles.forEach {
+            try? ImageBundleStore.shared.delete($0)
+        }
+        loadBundles()
+        clearSelection()
+    }
+
+    func bulkDownload() {
+        selectedBundles.forEach(BundleExporter.export)
+        clearSelection()
+    }
+
+    // MARK: - Update helper
+    private func update(
+        _ bundle: ImageBundle,
+        change: (inout ImageBundle) -> Void
+    ) {
+        do {
+            var updated = bundle
+            change(&updated)
+            try ImageBundleStore.shared.update(updated)
+            loadBundles()
+        } catch {
+            print("Update failed:", error)
+        }
+    }
 }

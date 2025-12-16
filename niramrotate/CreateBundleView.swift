@@ -5,6 +5,159 @@
 //  Created by aravinthan.selvaraj on 14/12/25.
 //
 
+//import SwiftUI
+//import PhotosUI
+//
+//
+//struct CreateBundleView: View {
+//
+//    @Environment(\.dismiss) private var dismiss
+//    @StateObject private var vm = CreateBundleViewModel()
+//
+//    var body: some View {
+//        NavigationStack {
+//            Form {
+//
+//                // MARK: - Bundle name
+//                Section("Bundle Name") {
+//                    TextField("e.g. Work Focus", text: $vm.bundleName)
+//                        .textInputAutocapitalization(.words)
+//                }
+//
+//                // MARK: - Image pager
+//                Section("Images") {
+//                    if vm.previews.isEmpty {
+//                        Button {
+//                            vm.showPicker = true
+//                        } label: {
+//                            Label("Add Images", systemImage: "photo.on.rectangle")
+//                        }
+//                    } else {
+//                        TabView(selection: $vm.currentIndex) {
+//                            ForEach(vm.previews.indices, id: \.self) { index in
+//                                Image(uiImage: vm.previews[index].image)
+//                                    .resizable()
+//                                    .scaledToFit()
+//                                    .tag(index)
+//                            }
+//                        }
+//                        .frame(height: 280)
+//                        .tabViewStyle(.page(indexDisplayMode: .automatic))
+//
+//                        Text("\(vm.previews.count) images selected")
+//                            .font(.footnote)
+//                            .foregroundStyle(.secondary)
+//                    }
+//                }
+//
+//                // MARK: - NSFW consent
+//                Section("Content") {
+//                    Toggle(
+//                        "This bundle contains sensitive / NSFW content",
+//                        isOn: $vm.isNSFW
+//                    )
+//                }
+//            }
+//            .navigationTitle("Create Bundle")
+//            .toolbar {
+//
+//                // Cancel
+//                ToolbarItem(placement: .topBarLeading) {
+//                    Button("Cancel") {
+//                        dismiss()
+//                    }
+//                }
+//
+//                // Create
+//                ToolbarItem(placement: .topBarTrailing) {
+//                    Button {
+//                        Task { await vm.createBundle() }
+//                    } label: {
+//                        if vm.isCreating {
+//                            ProgressView()
+//                        } else {
+//                            Text("Create")
+//                        }
+//                    }
+//                    .disabled(!vm.canCreate)
+//                }
+//            }
+//
+//            // Delete / Add overlays (Reddit-style)
+//            .overlay(alignment: .topTrailing) {
+//                if !vm.previews.isEmpty {
+//                    Button {
+//                        vm.showDeleteSheet = true
+//                    } label: {
+//                        Image(systemName: "xmark.circle.fill")
+//                            .font(.title)
+//                            .foregroundStyle(.white)
+//                            .background(.black.opacity(0.6))
+//                            .clipShape(Circle())
+//                            .padding()
+//                    }
+//                }
+//            }
+//            .overlay(alignment: .bottomTrailing) {
+//                if !vm.previews.isEmpty {
+//                    Button {
+//                        vm.showPicker = true
+//                    } label: {
+//                        Label("Add", systemImage: "photo.on.rectangle")
+//                            .padding(.horizontal, 14)
+//                            .padding(.vertical, 10)
+//                            .background(.ultraThinMaterial)
+//                            .clipShape(Capsule())
+//                            .padding()
+//                    }
+//                }
+//            }
+//
+//            // Picker
+//            .photosPicker(
+//                isPresented: $vm.showPicker,
+//                selection: $vm.selectedItems,
+//                matching: .images
+//            )
+//            .onChange(of: vm.selectedItems) {
+//                Task { await vm.appendPickedItems() }
+//            }
+//
+//            // Delete actions
+//            .confirmationDialog(
+//                "Remove image",
+//                isPresented: $vm.showDeleteSheet
+//            ) {
+//                Button("Delete current image", role: .destructive) {
+//                    vm.removeCurrentImage()
+//                }
+//
+//                Button("Delete all images", role: .destructive) {
+//                    vm.clearAll()
+//                }
+//
+//                Button("Cancel", role: .cancel) {}
+//            }
+//
+//            // Result alert
+//            .alert(
+//                vm.creationSucceeded ? "Success" : "Error",
+//                isPresented: $vm.showResultAlert
+//            ) {
+//                if vm.creationSucceeded {
+//                    Button("Done") {
+//                        dismiss()
+//                    }
+//                } else {
+//                    Button("OK", role: .cancel) {}
+//                }
+//            } message: {
+//                Text(vm.resultMessage)
+//            }
+//        }
+//    }
+//}
+
 import SwiftUI
 import PhotosUI
 
@@ -23,71 +176,101 @@ struct CreateBundleView: View {
                         .textInputAutocapitalization(.words)
                 }
 
-                // MARK: - Image Picker
-                Section {
-                    PhotosPicker(
-                        selection: $vm.selectedItems,
-                        matching: .images
-                    ) {
-                        Label("Add Images", systemImage: "photo.on.rectangle")
-                    }
-                    .onChange(of: vm.selectedItems) {
-                        Task { await vm.appendPickedItems() }
-                    }
+                // MARK: - Images (Reddit-style)
+                Section("Images") {
 
-                    if !vm.previews.isEmpty {
+                    if vm.previews.isEmpty {
+                        Button {
+                            vm.showPicker = true
+                        } label: {
+                            Label("Add Images", systemImage: "photo.on.rectangle")
+                        }
+                    } else {
+
+                        ZStack {
+
+                            // Image pager
+                            TabView(selection: $vm.currentIndex) {
+                                ForEach(vm.previews.indices, id: \.self) { index in
+                                    Image(uiImage: vm.previews[index].image)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .tag(index)
+                                }
+                            }
+                            .tabViewStyle(.page(indexDisplayMode: .automatic))
+
+                            // ❌ Delete (top-right of image only)
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        vm.showDeleteSheet = true
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.title)
+                                            .foregroundStyle(.white)
+                                            .background(.black.opacity(0.6))
+                                            .clipShape(Circle())
+                                            .contentShape(Circle())
+                                            .onTapGesture {
+                                                vm.showDeleteSheet = true
+                                            }
+                                            .allowsHitTesting(true)
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(12)
+
+                            // ➕ Add (bottom-right of image only)
+                            VStack {
+                                Spacer()
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        vm.showPicker = true
+                                    } label: {
+                                        Label("Add", systemImage: "photo.on.rectangle")
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 10)
+                                            .background(.ultraThinMaterial)
+                                            .clipShape(Capsule())
+                                    }
+                                }
+                            }
+                            .padding(12)
+                        }
+                        .frame(height: 280)
+
                         Text("\(vm.previews.count) images selected")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
-                
 
-                // MARK: - Preview Grid
-                Section("Preview (\(vm.previews.count))") {
-                    if vm.previews.isEmpty {
-                        Text("No images selected")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        LazyVGrid(
-                            columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3),
-                            spacing: 12
-                        ) {
-                            ForEach(vm.previews) { item in
-                                ZStack(alignment: .topTrailing) {
-                                    Image(uiImage: item.image)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(height: 110)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                        .clipped()
-
-                                    Button {
-                                        vm.removeImage(id: item.id)
-                                    } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundStyle(.white)
-                                            .background(.black.opacity(0.6))
-                                            .clipShape(Circle())
-                                    }
-                                    .padding(6)
-                                }
-                            }
-                        }
-
-                        Button("Clear All", role: .destructive) {
-                            vm.clearAll()
-                        }
-                    }
+                // MARK: - NSFW Consent
+                Section("Content") {
+                    Toggle(
+                        "This bundle contains sensitive / NSFW content",
+                        isOn: $vm.isNSFW
+                    )
                 }
             }
             .navigationTitle("Create Bundle")
             .toolbar {
+
+                // Cancel
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+
+                // Create
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        Task {
-                            await vm.createBundle()
-                        }
+                        Task { await vm.createBundle() }
                     } label: {
                         if vm.isCreating {
                             ProgressView()
@@ -98,16 +281,42 @@ struct CreateBundleView: View {
                     .disabled(!vm.canCreate)
                 }
             }
+
+            // MARK: - Photos Picker
+            .photosPicker(
+                isPresented: $vm.showPicker,
+                selection: $vm.selectedItems,
+                matching: .images
+            )
+            .onChange(of: vm.selectedItems) {
+                Task { await vm.appendPickedItems() }
+            }
+
+            // MARK: - Delete Actions
+            .confirmationDialog(
+                "Remove image",
+                isPresented: $vm.showDeleteSheet
+            ) {
+                Button("Delete current image", role: .destructive) {
+                    vm.removeCurrentImage()
+                }
+
+                Button("Delete all images", role: .destructive) {
+                    vm.clearAll()
+                }
+
+                Button("Cancel", role: .cancel) {}
+            }
+
+            // MARK: - Result Alert
             .alert(
                 vm.creationSucceeded ? "Success" : "Error",
                 isPresented: $vm.showResultAlert
             ) {
                 if vm.creationSucceeded {
                     Button("Done") {
-                        vm.clearAll()
                         dismiss()
                     }
-                    .tint(.green)
                 } else {
                     Button("OK", role: .cancel) {}
                 }

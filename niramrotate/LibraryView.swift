@@ -10,125 +10,90 @@ import SwiftUI
 struct LibraryView: View {
     @StateObject private var vm = LibraryViewModel()
 
+    @StateObject private var settings = AppSettings.shared
+    
     var body: some View {
         NavigationStack {
-            content
-                .navigationTitle("Library")
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
+            List {
+
+                // Telegram-style Archived row
+                if settings.pinarchiveEnabled && !vm.archived.isEmpty {
+                    Section {
                         NavigationLink {
                             ArchivedLibraryView(vm: vm)
                         } label: {
-                            Image(systemName: "archivebox")
-                        }
-                    }
-
-                    ToolbarItem(placement: .topBarLeading) {
-                        Menu {
-                            Picker("Sort", selection: $vm.sortOption) {
-                                ForEach(LibrarySortOption.allCases, id: \.self) {
-                                    Text($0.rawValue)
-                                }
+                            HStack {
+                                Image(systemName: "archivebox.fill")
+                                Text("Archived")
+                                Spacer()
+                                Text("\(vm.archived.count)")
+                                    .foregroundStyle(.secondary)
                             }
-                            .onChange(of: vm.sortOption) { _, _ in
-                                vm.applySort()
-                            }
-                        } label: {
-                            Image(systemName: "arrow.up.arrow.down")
                         }
                     }
+                }
 
-//                    ToolbarItem(placement: .topBarTrailing) {
-//                        Button {
-//                            vm.isGrid.toggle()
-//                        } label: {
-//                            Image(systemName: vm.isGrid ? "list.bullet" : "square.grid.2x2")
-//                        }
-//                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            vm.toggleSelectAll()
-                        } label: {
-                            Image(systemName: vm.isAllSelected ? "checkmark.circle.fill" : "checkmark.circle")
-                        }
+                // Active bundles
+                Section {
+                    ForEach(vm.visibleBundles) { bundle in
+                        BundleRow(bundle: bundle)
                     }
-
                 }
-                .onAppear {
-                    vm.loadBundles()
-                }
-//                .navigationDestination(isPresented: $vm.showArchived) {
-//                    ArchivedLibraryView(vm: vm)
-//                }
-//                .refreshable {
-//                    vm.showArchived = true
-//                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Library")
+            .toolbar { toolbarContent }
+            .refreshable { vm.loadBundles() }
+            .onAppear { vm.loadBundles() }
         }
+        .environmentObject(vm)
+        .environmentObject(settings)
     }
-    
-    @ViewBuilder
-    private var content: some View {
-        if vm.bundles.isEmpty {
-            ContentUnavailableView(
-                "No wallpapers",
-                systemImage: "photo",
-                description: Text("Create a bundle to get started")
-            )
-        } else {
-//            ScrollView {
-//                LazyVStack(spacing: 16) {
-//                    ForEach(vm.bundles) { bundle in
-//                        NavigationLink {
-//                            BundleViewerView(bundle: bundle)
-//                                .toolbar(.hidden, for: .tabBar)
-//                        } label: {
-//                            BundleLibraryRow(bundle: bundle)
-//                        }
-//                    }
-//                }
-//                .padding()
-//            }
-            List {
-                ForEach(vm.active) { bundle in
-                    NavigationLink {
-                        BundleViewerView(bundle: bundle)
-                            .toolbar(.hidden, for: .tabBar)
+
+    // MARK: - Toolbar
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+
+        ToolbarItem(placement: .topBarLeading) {
+            if vm.isSelectionMode {
+                Button("Cancel") {
+                    vm.clearSelection()
+                }
+            } else {
+                Menu {
+                    Picker("Sort", selection: $vm.sortOption) {
+                        ForEach(LibrarySortOption.allCases, id: \.self) {
+                            Text($0.rawValue)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+            }
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+            if vm.isSelectionMode {
+                HStack {
+                    Button { vm.bulkArchive() } label: {
+                        Image(systemName: "archivebox.fill")
+                    }
+                    Button { vm.bulkDownload() } label: {
+                        Image(systemName: "arrow.down.to.line")
+                    }
+                    Button(role: .destructive) {
+                        vm.bulkDelete()
                     } label: {
-                        BundleLibraryRow(bundle: bundle)
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-
-                        // DELETE
-                        Button(role: .destructive) {
-                            vm.delete(bundle)
-                        } label: {
-                            Image(systemName: "trash.fill")
-                        }
-
-                        // ARCHIVE
-                        Button {
-                            vm.archive(bundle)
-                        } label: {
-                            Image(systemName: "archivebox.fill")
-                        }
-                        .tint(.gray)
-
-                        // DOWNLOAD
-                        Button {
-                            vm.download(bundle)
-                        } label: {
-                            Image(systemName: "arrow.down.to.line")
-                        }
-                        .tint(.blue)
+                        Image(systemName: "trash.fill")
                     }
                 }
-            }
-            .listStyle(.plain)
-            .refreshable {
-                vm.loadBundles()
+            } else {
+                Button {
+                    vm.isSelectionMode = true
+                } label: {
+                    Image(systemName: "checkmark.circle")
+                }
             }
         }
     }
-
-
 }

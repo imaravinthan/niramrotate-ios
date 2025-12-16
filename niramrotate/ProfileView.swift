@@ -22,6 +22,26 @@ struct ProfileView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section("Preferences") {
+                    Toggle("Haptic Feedback", isOn: Binding(
+                        get: { AppSettings.shared.hapticsEnabled },
+                        set: { AppSettings.shared.hapticsEnabled = $0 }
+                    ))
+                    Toggle("Pin Archived", isOn: Binding(
+                        get: { AppSettings.shared.pinarchiveEnabled },
+                        set: { AppSettings.shared.pinarchiveEnabled = $0 }
+                    ))
+                     
+                    Toggle("Show NFSW in Library", isOn: Binding(
+                        get: { AppSettings.shared.showNSFWEnabled },
+                        set: { AppSettings.shared.showNSFWEnabled = $0 }
+                    ))
+                    Toggle("Blur NFSW Thumbnails", isOn: Binding(
+                        get: { AppSettings.shared.blurNSFWBundleEnabled },
+                        set: { AppSettings.shared.blurNSFWBundleEnabled = $0 }
+                    ))
+                }
+                
                 Section("Danger Zone") {
 
                     Button("Clear All Bundles", role: .destructive) {
@@ -32,13 +52,7 @@ struct ProfileView: View {
                         showResetConfirm = true
                     }
                 }
-                Section("Preferences") {
-                    Toggle("Haptic Feedback", isOn: Binding(
-                        get: { AppSettings.shared.hapticsEnabled },
-                        set: { AppSettings.shared.hapticsEnabled = $0 }
-                    ))
-                }
-
+                
 
                 if let errorMessage {
                     Section {

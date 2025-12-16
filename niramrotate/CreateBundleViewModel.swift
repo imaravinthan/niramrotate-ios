@@ -22,14 +22,21 @@ final class CreateBundleViewModel: ObservableObject {
     @Published var bundleName: String = ""
     @Published var selectedItems: [PhotosPickerItem] = []
 
-    // MARK: - Preview State (SINGLE SOURCE OF TRUTH)
+    // MARK: - Preview (single source of truth)
     @Published private(set) var previews: [PreviewItem] = []
+    @Published var currentIndex: Int = 0
 
     // MARK: - UI State
     @Published private(set) var isCreating = false
     @Published var showResultAlert = false
     @Published var resultMessage = ""
     @Published var creationSucceeded = false
+    @Published var isNSFW = false
+
+    @Published var showPicker = false
+    @Published var showDeleteSheet = false
+
+    private var importedItemIDs = Set<String>()
 
     var canCreate: Bool {
         !bundleName.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -37,47 +44,61 @@ final class CreateBundleViewModel: ObservableObject {
         !isCreating
     }
 
-    // MARK: - Image Picker Handling
-
+    // MARK: - Picker import (append-only)
     func appendPickedItems() async {
         for item in selectedItems {
+
+            let identifier = item.itemIdentifier ?? UUID().uuidString
+            guard !importedItemIDs.contains(identifier) else { continue }
+
             guard
                 let data = try? await item.loadTransferable(type: Data.self),
                 let image = UIImage(data: data)
             else { continue }
 
-            // prevent duplicates
-            if previews.contains(where: { $0.data == data }) { continue }
+            previews.append(
+                PreviewItem(
+                    id: UUID(),
+                    image: image,
+                    data: data
+                )
+            )
 
-            previews.append(PreviewItem(id: UUID(),image: image, data: data))
+            importedItemIDs.insert(identifier)
         }
 
         selectedItems.removeAll()
     }
 
+    // MARK: - Deletion
+    func removeCurrentImage() {
+        guard !previews.isEmpty else { return }
 
-    // MARK: - Remove / Clear
+        previews.remove(at: currentIndex)
 
-    func removeImage(id: UUID) {
-        previews.removeAll { $0.id == id }
+        if currentIndex >= previews.count {
+            currentIndex = max(previews.count - 1, 0)
+        }
     }
-
 
     func clearAll() {
         previews.removeAll()
         selectedItems.removeAll()
-        bundleName = ""
+        importedItemIDs.removeAll()
+        currentIndex = 0
     }
 
-    // MARK: - Create Bundle
-
+    // MARK: - Create bundle
     func createBundle() async {
         guard canCreate else { return }
 
         isCreating = true
 
         do {
-            let bundle = try ImageBundleStore.shared.createBundle(name: bundleName)
+            let bundle = try ImageBundleStore.shared.createBundle(
+                name: bundleName,
+                isNSFW: isNSFW
+            )
 
             for item in previews {
                 try ImageBundleStore.shared.addEncryptedImage(item.data, to: bundle)
@@ -87,9 +108,8 @@ final class CreateBundleViewModel: ObservableObject {
             resultMessage = "Bundle \"\(bundleName)\" created"
             showResultAlert = true
 
-            // RESET STATE
+            clearAll()
             bundleName = ""
-            previews.removeAll()
 
         } catch {
             creationSucceeded = false
@@ -99,8 +119,4 @@ final class CreateBundleViewModel: ObservableObject {
 
         isCreating = false
     }
-
-    
-    
 }
-

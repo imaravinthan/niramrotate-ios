@@ -28,12 +28,14 @@ final class ImageBundleStore {
 
     // MARK: - Bundle CRUD
 
-    func createBundle(name: String) throws -> ImageBundle {
+    func createBundle(name: String, isNSFW: Bool) throws -> ImageBundle {
         let bundle = ImageBundle(
             id: UUID(),
             name: name,
             imageCount: 0,
-            createdAt: Date()
+            createdAt: Date(),
+            isArchived: false,
+            isNSFW: isNSFW
         )
 
         let bundleURL = baseURL.appendingPathComponent(bundle.id.uuidString)

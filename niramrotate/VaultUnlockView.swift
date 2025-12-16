@@ -70,25 +70,25 @@ struct VaultUnlockView: View {
     }
 
     
-    private func testBundleCreation() {
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                let bundle = try ImageBundleStore.shared.createBundle(name: "Test Bundle")
-
-                let sampleData = Data("hello-image".utf8)
-
-                try ImageBundleStore.shared.addEncryptedImage(
-                    sampleData,
-                    to: bundle
-                )
-
-                print("✅ Test bundle created:", bundle.id)
-
-            } catch {
-                print("❌ Bundle test failed:", error)
-            }
-        }
-    }
+//    private func testBundleCreation() {
+//        DispatchQueue.global(qos: .userInitiated).async {
+//            do {
+//                let bundle = try ImageBundleStore.shared.createBundle(name: "Test Bundle")
+//
+//                let sampleData = Data("hello-image".utf8)
+//
+//                try ImageBundleStore.shared.addEncryptedImage(
+//                    sampleData,
+//                    to: bundle
+//                )
+//
+//                print("✅ Test bundle created:", bundle.id)
+//
+//            } catch {
+//                print("❌ Bundle test failed:", error)
+//            }
+//        }
+//    }
 
 
 }

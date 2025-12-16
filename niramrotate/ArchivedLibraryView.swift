@@ -41,11 +41,41 @@
 //        .navigationTitle("Archived")
 //        .listStyle(.plain)
 //    }
+////}
+//import SwiftUI
+//
+//struct ArchivedLibraryView: View {
+//
+//    @ObservedObject var vm: LibraryViewModel
+//
+//    var body: some View {
+//        List {
+//            ForEach(vm.archived) { bundle in
+//                BundleLibraryRow(bundle: bundle)
+//                    .swipeActions {
+//
+//                        Button {
+//                            vm.unarchive(bundle)
+//                        } label: {
+//                            Image(systemName: "arrow.uturn.left")
+//                        }
+//                        .tint(.green)
+//
+//                        Button(role: .destructive) {
+//                            vm.delete(bundle)
+//                        } label: {
+//                            Image(systemName: "trash.fill")
+//                        }
+//                    }
+//            }
+//        }
+//        .navigationTitle("Archived")
+//    }
 //}
+
 import SwiftUI
 
 struct ArchivedLibraryView: View {
-
     @ObservedObject var vm: LibraryViewModel
 
     var body: some View {
@@ -53,22 +83,17 @@ struct ArchivedLibraryView: View {
             ForEach(vm.archived) { bundle in
                 BundleLibraryRow(bundle: bundle)
                     .swipeActions {
-
                         Button {
                             vm.unarchive(bundle)
                         } label: {
                             Image(systemName: "arrow.uturn.left")
                         }
-                        .tint(.green)
-
-                        Button(role: .destructive) {
-                            vm.delete(bundle)
-                        } label: {
-                            Image(systemName: "trash.fill")
-                        }
+                        .tint(.blue)
                     }
             }
         }
         .navigationTitle("Archived")
+        .listStyle(.insetGrouped)
+        .onAppear { vm.loadBundles() }
     }
 }
