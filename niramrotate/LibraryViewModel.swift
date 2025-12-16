@@ -17,16 +17,18 @@ final class LibraryViewModel: ObservableObject {
     @Published var selectedIDs: Set<ImageBundle.ID> = []
     @Published var isSelectionMode = false
     @Published var sortOption: LibrarySortOption = .newest
+    @Published var searchText: String = ""
+
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
-        $sortOption
-            .removeDuplicates()
-            .sink { [weak self] _ in
-                self?.applySort()
-            }
-            .store(in: &cancellables)
-    }
+//    init() {
+//        $sortOption
+//            .removeDuplicates()
+//            .sink { [weak self] _ in
+//                self?.applySort()
+//            }
+//            .store(in: &cancellables)
+//    }
 
     var active: [ImageBundle] {
         bundles.filter { !$0.isArchived }
@@ -43,31 +45,64 @@ final class LibraryViewModel: ObservableObject {
     // MARK: - Load
     func loadBundles() {
         bundles = ImageBundleStore.shared.loadAllBundles()
-        applySort()
+//        applySort()
     }
 
-    var visibleBundles: [ImageBundle] {
-        bundles.filter { bundle in
-            if bundle.isNSFW && !AppSettings.shared.showNSFWEnabled {
-                return false
+//    var visibleBundles: [ImageBundle] {
+//        bundles.filter { bundle in
+//            if bundle.isNSFW && !AppSettings.shared.showNSFWEnabled {
+//                return false
+//            }
+//            return !bundle.isArchived
+//        }
+//    }
+        var displayBundles: [ImageBundle] {
+            var result = bundles
+
+            // 1. Filter archived
+            result = result.filter { !$0.isArchived }
+
+            // 2. Filter NSFW
+            if !AppSettings.shared.showNSFWEnabled {
+                result = result.filter { !$0.isNSFW }
             }
-            return !bundle.isArchived
+
+            // 3. Search by name
+            if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+                let query = searchText.lowercased()
+                result = result.filter {
+                    $0.name.lowercased().contains(query)
+                }
+            }
+
+            // 4. Sort
+            switch sortOption {
+            case .newest:
+                result.sort { $0.createdAt > $1.createdAt }
+            case .nameAZ:
+                result.sort { $0.name.lowercased() < $1.name.lowercased() }
+            case .nameZA:
+                result.sort { $0.name.lowercased() > $1.name.lowercased() }
+            case .mostImages:
+                result.sort { $0.imageCount > $1.imageCount }
+            }
+
+            return result
         }
-    }
 
     
-    func applySort() {
-        switch sortOption {
-        case .newest:
-            bundles.sort { $0.createdAt > $1.createdAt }
-        case .nameAZ:
-            bundles.sort { $0.name.lowercased() < $1.name.lowercased() }
-        case .nameZA:
-            bundles.sort { $0.name.lowercased() > $1.name.lowercased() }
-        case .mostImages:
-            bundles.sort { $0.imageCount > $1.imageCount }
-        }
-    }
+//    func applySort() {
+//        switch sortOption {
+//        case .newest:
+//            bundles.sort { $0.createdAt > $1.createdAt }
+//        case .nameAZ:
+//            bundles.sort { $0.name.lowercased() < $1.name.lowercased() }
+//        case .nameZA:
+//            bundles.sort { $0.name.lowercased() > $1.name.lowercased() }
+//        case .mostImages:
+//            bundles.sort { $0.imageCount > $1.imageCount }
+//        }
+//    }
 
     // MARK: - Single actions
     func archive(_ bundle: ImageBundle) {

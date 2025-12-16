@@ -11,6 +11,7 @@ struct LibraryView: View {
     @StateObject private var vm = LibraryViewModel()
 
     @StateObject private var settings = AppSettings.shared
+    @State private var showSearch = false
     
     var body: some View {
         NavigationStack {
@@ -35,13 +36,19 @@ struct LibraryView: View {
 
                 // Active bundles
                 Section {
-                    ForEach(vm.visibleBundles) { bundle in
+                    ForEach(vm.displayBundles) { bundle in
                         BundleRow(bundle: bundle)
                     }
                 }
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Library")
+            .searchable(
+                text: $vm.searchText,
+                isPresented: $showSearch,
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: "Search bundles"
+            )
             .toolbar { toolbarContent }
             .refreshable { vm.loadBundles() }
             .onAppear { vm.loadBundles() }
@@ -68,6 +75,12 @@ struct LibraryView: View {
                     }
                 } label: {
                     Image(systemName: "arrow.up.arrow.down")
+                }
+                
+                Button {
+                    showSearch.toggle()
+                } label: {
+                    Image(systemName: "magnifyingglass")
                 }
             }
         }
