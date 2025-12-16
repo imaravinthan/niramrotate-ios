@@ -267,12 +267,14 @@ struct CreateBundleView: View {
             .navigationTitle("Create Bundle")
             .toolbar {
 
-                // Cancel
+                // Reset form
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                    Button("Clear") {
+                        vm.resetForm()
                     }
+                    .disabled(!vm.isFormDirty)
                 }
+
 
                 // Create
                 ToolbarItem(placement: .topBarTrailing) {

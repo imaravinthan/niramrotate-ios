@@ -62,7 +62,12 @@ final class CreateBundleViewModel: ObservableObject {
         !isCreating &&
         !isDuplicateName
     }
-
+    
+    var isFormDirty: Bool {
+        !bundleName.trimmingCharacters(in: .whitespaces).isEmpty ||
+        !previews.isEmpty ||
+        isNSFW
+    }
 
     // MARK: - Picker import (append-only)
     func appendPickedItems() async {
@@ -139,4 +144,14 @@ final class CreateBundleViewModel: ObservableObject {
 
         isCreating = false
     }
+    
+    func resetForm() {
+        bundleName = ""
+        isNSFW = false
+        previews.removeAll()
+        selectedItems.removeAll()
+        importedItemIDs.removeAll()
+        currentIndex = 0
+    }
+
 }
