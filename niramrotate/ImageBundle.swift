@@ -13,4 +13,5 @@ struct ImageBundle: Identifiable, Codable {
     var imageCount: Int
     var createdAt: Date
     var lastIndex: Int?
+    var isArchived: Bool = false
 }

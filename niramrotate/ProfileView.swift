@@ -32,6 +32,13 @@ struct ProfileView: View {
                         showResetConfirm = true
                     }
                 }
+                Section("Preferences") {
+                    Toggle("Haptic Feedback", isOn: Binding(
+                        get: { AppSettings.shared.hapticsEnabled },
+                        set: { AppSettings.shared.hapticsEnabled = $0 }
+                    ))
+                }
+
 
                 if let errorMessage {
                     Section {

@@ -41,6 +41,7 @@ struct CreateBundleView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                
 
                 // MARK: - Preview Grid
                 Section("Preview (\(vm.previews.count))") {

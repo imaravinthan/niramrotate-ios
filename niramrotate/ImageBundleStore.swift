@@ -157,26 +157,41 @@ final class ImageBundleStore {
         return image
     }
     
-    func deleteEncryptedImage(
-        _ url: URL,
-        from bundle: ImageBundle
-    ) throws {
+//    func deleteEncryptedImage(
+//        _ url: URL,
+//        from bundle: ImageBundle
+//    ) throws {
+//
+//        let fm = FileManager.default
+//        try fm.removeItem(at: url)
+//
+//        // update manifest
+//        let manifestURL = baseURL
+//            .appendingPathComponent(bundle.id.uuidString)
+//            .appendingPathComponent("manifest.json")
+//
+//        let data = try Data(contentsOf: manifestURL)
+//        var updated = try JSONDecoder().decode(ImageBundle.self, from: data)
+//        updated.imageCount = max(0, updated.imageCount - 1)
+//
+//        let encoded = try JSONEncoder().encode(updated)
+//        try encoded.write(to: manifestURL, options: .atomic)
+//    }
+    func deleteEncryptedImage(_ url: URL, from bundle: ImageBundle) throws {
+        try FileManager.default.removeItem(at: url)
 
-        let fm = FileManager.default
-        try fm.removeItem(at: url)
-
-        // update manifest
         let manifestURL = baseURL
             .appendingPathComponent(bundle.id.uuidString)
             .appendingPathComponent("manifest.json")
 
         let data = try Data(contentsOf: manifestURL)
-        var updated = try JSONDecoder().decode(ImageBundle.self, from: data)
-        updated.imageCount = max(0, updated.imageCount - 1)
+        var model = try JSONDecoder().decode(ImageBundle.self, from: data)
+        model.imageCount = max(0, model.imageCount - 1)
 
-        let encoded = try JSONEncoder().encode(updated)
-        try encoded.write(to: manifestURL, options: .atomic)
+        let updated = try JSONEncoder().encode(model)
+        try updated.write(to: manifestURL, options: .atomic)
     }
+
 
     
     private func updateLastIndex(bundleID: UUID, index: Int) {
@@ -269,5 +284,53 @@ extension ImageBundleStore {
         }
     }
     
+//    func archive(_ bundle: ImageBundle) throws {
+//        try update(bundleID: bundle.id) { $0.isArchived = true }
+//    }
 
+    func delete(_ bundle: ImageBundle) throws {
+        let url = baseURL.appendingPathComponent(bundle.id.uuidString)
+        try FileManager.default.removeItem(at: url)
+    }
+    
+    func updateBundle(_ bundle: ImageBundle) throws {
+            let url = baseURL
+                .appendingPathComponent(bundle.id.uuidString)
+                .appendingPathComponent("manifest.json")
+
+            let data = try JSONEncoder().encode(bundle)
+            try data.write(to: url, options: .atomic)
+    }
+    
+//    private func update(
+//        bundleID: UUID,
+//        mutate: (inout ImageBundle) -> Void
+//    ) throws {
+//        let manifestURL = baseURL
+//            .appendingPathComponent(bundleID.uuidString)
+//            .appendingPathComponent("manifest.json")
+//
+//        var bundle = try JSONDecoder().decode(
+//            ImageBundle.self,
+//            from: Data(contentsOf: manifestURL)
+//        )
+//
+//        mutate(&bundle)
+//
+//        let data = try JSONEncoder().encode(bundle)
+//        try data.write(to: manifestURL, options: .atomic)
+//    }
+    
+    func update(_ bundle: ImageBundle) throws {
+            let url = baseURL
+                .appendingPathComponent(bundle.id.uuidString)
+                .appendingPathComponent("manifest.json")
+
+            let data = try JSONEncoder().encode(bundle)
+            try data.write(to: url, options: .atomic)
+        }
+    
+    func bundleURL(for bundle: ImageBundle) -> URL {
+        baseURL.appendingPathComponent(bundle.id.uuidString)
+    }
 }
