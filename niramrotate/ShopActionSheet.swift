@@ -12,7 +12,7 @@ struct ShopActionSheet: View {
     let wallpaper: ShopWallpaper
     let onSelect: (ShopPostAction) -> Void
     let onDismiss: () -> Void
-
+    
     var body: some View {
         VStack(spacing: 12) {
 
@@ -21,25 +21,44 @@ struct ShopActionSheet: View {
                 .frame(width: 40, height: 5)
                 .padding(.top, 8)
 
-            actionButton("Download", systemImage: "arrow.down.to.line") {
+            actionButton(
+                "Download",
+                systemImage: "arrow.down.to.line",
+                foreground: .blue
+            ) {
                 onSelect(.download)
             }
 
-            actionButton("Share", systemImage: "square.and.arrow.up") {
+            actionButton(
+                "Share",
+                systemImage: "square.and.arrow.up",
+                foreground: .blue
+            ) {
                 onSelect(.share)
             }
 
-            actionButton("View Fullscreen", systemImage: "arrow.up.left.and.arrow.down.right") {
+            actionButton(
+                "View Fullscreen",
+                systemImage: "arrow.up.left.and.arrow.down.right",
+                foreground: .blue
+            ) {
                 onSelect(.fullscreen)
             }
 
-            actionButton("Details", systemImage: "info.circle") {
+            actionButton(
+                "Details",
+                systemImage: "info.circle",
+                foreground: .blue
+            ) {
                 onSelect(.details)
             }
 
+            // 🔴 Cancel — red text, no capsule
             Button("Cancel", role: .cancel) {
                 onDismiss()
             }
+            .font(.headline.bold())
+            .foregroundColor(.red)
             .padding(.top, 8)
 
         }
@@ -49,18 +68,26 @@ struct ShopActionSheet: View {
         .padding()
     }
 
+    @ViewBuilder
     private func actionButton(
         _ title: String,
         systemImage: String,
+        role: ButtonRole? = nil,
+        foreground: Color = .blue,
+        font: Font = .headline,
+        background: Color = .white.opacity(0.2),
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: systemImage)
-                Text(title)
-                Spacer()
-            }
-            .padding()
+        Button(role: role, action: action) {
+            Label(title, systemImage: systemImage)
+                .font(font)
+                .fontWeight(.bold)
+                .foregroundColor(foreground)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(background)
+                .clipShape(Capsule())
         }
     }
+
 }
