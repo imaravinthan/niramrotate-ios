@@ -17,6 +17,16 @@ final class LibraryViewModel: ObservableObject {
     @Published var selectedIDs: Set<ImageBundle.ID> = []
     @Published var isSelectionMode = false
     @Published var sortOption: LibrarySortOption = .newest
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        $sortOption
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                self?.applySort()
+            }
+            .store(in: &cancellables)
+    }
 
     var active: [ImageBundle] {
         bundles.filter { !$0.isArchived }
@@ -107,10 +117,23 @@ final class LibraryViewModel: ObservableObject {
         clearSelection()
     }
 
+//    func bulkDownload() {
+//        selectedBundles.forEach(BundleExporter.export)
+//        clearSelection()
+//    }
     func bulkDownload() {
-        selectedBundles.forEach(BundleExporter.export)
+        guard !selectedBundles.isEmpty else { return }
+
+        do {
+            let zipURL = try BundleExporter.exportAsZip(selectedBundles)
+            BundleExporter.presentShareSheet(for: zipURL)
+        } catch {
+            print("Bulk export failed:", error)
+        }
+
         clearSelection()
     }
+
 
     // MARK: - Update helper
     private func update(
