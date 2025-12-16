@@ -7,8 +7,6 @@
 import SwiftUI
 import Foundation
 
-import Foundation
-
 struct ShopWallpaper: Identifiable, Hashable {
     let id: String
     let previewURL: URL
@@ -17,6 +15,7 @@ struct ShopWallpaper: Identifiable, Hashable {
     let height: Int
     let isNSFW: Bool
 }
+
 
 struct ShopImageView: View {
     let previewURL: URL

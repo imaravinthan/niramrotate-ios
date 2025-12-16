@@ -9,76 +9,65 @@ import Foundation
 
 enum WallhavenAPI {
 
-    static let baseURL = "https://wallhaven.cc/api/v1/search"
-
-    static func fetchWallpapers(
+    static func fetch(
         page: Int,
         filters: ShopSearchFilters
     ) async throws -> [ShopWallpaper] {
 
-        var components = URLComponents(string: baseURL)!
-        var queryItems: [URLQueryItem] = []
+        var components = URLComponents(string: "https://wallhaven.cc/api/v1/search")!
 
-        // Search query
-        if !filters.query.isEmpty {
-            queryItems.append(
-                .init(name: "q", value: filters.query)
+        var items: [URLQueryItem] = [
+            .init(name: "ratios", value: "9x16"),
+            .init(name: "atleast", value: "1170x2532"),
+            .init(name: "sorting", value: "date_added"),
+            .init(name: "order", value: "desc"),
+            .init(name: "page", value: "\(page)")
+        ]
+
+        // Categories: General + People
+        items.append(
+            .init(
+                name: "categories",
+                value: filters.showAnime ? "111" : "110"
             )
-        }
-
-        // Ratios (portrait)
-        queryItems.append(
-            .init(name: "ratios", value: filters.ratios.joined(separator: ","))
         )
-
-        // Minimum resolution
-        queryItems.append(
-            .init(name: "atleast", value: filters.atleast)
-        )
-
-        // Categories
-        // General(1), Anime(2), People(4)
-        let categories = filters.showAnime ? "110" : "100"
-        queryItems.append(.init(name: "categories", value: categories))
 
         // Purity
-        // SFW(1), Sketchy(2), NSFW(4)
-        let purity = filters.showNSFW ? "111" : "100"
-        queryItems.append(.init(name: "purity", value: purity))
+        items.append(
+            .init(
+                name: "purity",
+                value: filters.showNSFW ? "111" : "100"
+            )
+        )
 
-        // Sorting
-        queryItems.append(.init(name: "sorting", value: "date_added"))
-        queryItems.append(.init(name: "order", value: "desc"))
-        queryItems.append(.init(name: "page", value: "\(page)"))
+        if !filters.query.isEmpty {
+            items.append(.init(name: "q", value: filters.query))
+        }
 
-        components.queryItems = queryItems
+        components.queryItems = items
 
         let (data, _) = try await URLSession.shared.data(from: components.url!)
-        let decoded = try JSONDecoder().decode(WallhavenResponse.self, from: data)
+        let response = try JSONDecoder().decode(Response.self, from: data)
 
-        return decoded.data.map {
+        return response.data.map {
             let parts = $0.resolution.split(separator: "x")
-            let w = Int(parts.first ?? "0") ?? 0
-            let h = Int(parts.last ?? "0") ?? 0
-
             return ShopWallpaper(
                 id: $0.id,
                 previewURL: URL(string: $0.thumbs.small)!,
                 fullURL: URL(string: $0.path)!,
-                width: w,
-                height: h,
+                width: Int(parts[0]) ?? 0,
+                height: Int(parts[1]) ?? 0,
                 isNSFW: $0.purity != "sfw"
             )
         }
     }
 }
 
-
-struct WallhavenResponse: Decodable {
-    let data: [WallhavenItem]
+private struct Response: Decodable {
+    let data: [Item]
 }
 
-struct WallhavenItem: Decodable {
+private struct Item: Decodable {
     let id: String
     let path: String
     let resolution: String
