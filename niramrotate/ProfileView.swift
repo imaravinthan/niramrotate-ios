@@ -40,6 +40,14 @@ struct ProfileView: View {
                         get: { AppSettings.shared.blurNSFWBundleEnabled },
                         set: { AppSettings.shared.blurNSFWBundleEnabled = $0 }
                     ))
+                    Toggle(
+                        "Show pager as dots in Bundle View",
+                        isOn: Binding(
+                            get: { AppSettings.shared.usePagerDots },
+                            set: { AppSettings.shared.usePagerDots = $0 }
+                        )
+                    )
+
                 }
                 
                 Section("Danger Zone") {

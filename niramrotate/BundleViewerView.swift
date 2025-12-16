@@ -43,6 +43,9 @@ struct BundleViewerView: View {
     @State private var showDeleteConfirm = false
     @State private var showPicker = false
     @State private var pickerItems: [PhotosPickerItem] = []
+    @State private var showShareSheet = false
+    @State private var shareImage: UIImage?
+
     @Environment(\.dismiss) private var dismiss
     
 
@@ -90,27 +93,51 @@ struct BundleViewerView: View {
             .padding(.leading, 12)
             .padding(.top, 12)
         }
-//        .overlay(alignment: .bottom) {
-//            HStack(spacing: 6) {
-//                ForEach(images.indices, id: \.self) { i in
-//                    Circle()
-//                        .fill(i == index ? .white : .white.opacity(0.4))
-//                        .frame(width: 6, height: 6)
-//                }
-//            }
-//            .padding(.bottom, 24)
-//        }
-        .overlay(alignment: .bottom) {
-            VStack {
-                Spacer()
-                Text("\(index + 1) / \(images.count)")
-                    .font(.caption)
-                    .padding(8)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .padding(.bottom, 30)
+        .onLongPressGesture {
+            guard index < images.count else { return }
+
+            if let data = try? SecureFileStore.shared.loadDecrypted(from: images[index]),
+               let image = UIImage(data: data) {
+
+                shareImage = image
+                showShareSheet = true
             }
         }
+        .overlay(alignment: .bottom) {
+            if !images.isEmpty {
+                if AppSettings.shared.usePagerDots {
+                    HStack(spacing: 6) {
+                        ForEach(images.indices, id: \.self) { i in
+                            Circle()
+                                .fill(i == index ? .white : .white.opacity(0.4))
+                                .frame(width: 6, height: 6)
+                        }
+                    }
+                    .padding(.bottom, 24)
+                } else {
+                    Text("\(index + 1) / \(images.count)")
+                        .font(.caption)
+                        .padding(8)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Capsule())
+                        .padding(.bottom, 30)
+                }
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let image = shareImage {
+                ActivityView(activityItems: [image])
+            }
+        }
+        .onChange(of: images) { newImages in
+            if newImages.isEmpty {
+                index = 0
+            } else if index >= newImages.count {
+                index = newImages.count - 1
+            }
+        }
+
+
 
     }
 
@@ -122,18 +149,22 @@ struct BundleViewerView: View {
                let data = try? SecureFileStore.shared.loadDecrypted(from: images[index]),
                let image = UIImage(data: data) {
 
-//                Image(uiImage: image)
-//                    .resizable()
-//                    .scaledToFill()
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()
-                    .contentShape(Rectangle()) // ← REQUIRED
+                    .contentShape(Rectangle())
 
 
             } else {
-                Color.black
+                ContentUnavailableView(
+                    "No wallpapers found",
+                    systemImage: "photo.on.rectangle.angled",
+                    description: Text("Swipe up to add images")
+                )
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black)
             }
         }
     }
@@ -211,7 +242,7 @@ struct BundleViewerView: View {
             print("❌ Delete failed:", error)
         }
     }
-
+    
     // MARK: - Photo Picker
 
     private func openPhotoPicker() {
@@ -265,39 +296,28 @@ struct BundleViewerView: View {
 //                }
 //            }
 //    }
-// Properly working
-//    private var unifiedSwipeGesture: some Gesture {
-//        DragGesture(minimumDistance: 30, coordinateSpace: .local)
-//            .onEnded { value in
-//                let horizontal = value.translation.width
-//                let vertical = value.translation.height
-//
-//                // Ignore edge swipes (allow system back)
-//                if value.startLocation.x < 20 {
-//                    return
-//                }
-//
-//                if abs(horizontal) > abs(vertical) {
-//                    if horizontal < -80 {
-//                        nextImage()
-//                    } else if horizontal > 80 {
-//                        previousImage()
-//                    }
-//                } else {
-//                    if vertical < -120 {
-//                        openPhotoPicker()
-//                    } else if vertical > 120 {
-//                        showDeleteConfirm = true
-//                    }
-//                }
-//            }
-//    }
+
     private var unifiedSwipeGesture: some Gesture {
         DragGesture(minimumDistance: 25)
             .onEnded { value in
                 let horizontal = value.translation.width
                 let vertical = value.translation.height
 
+                // ───────────────
+                // NO IMAGES CASE
+                // ───────────────
+                if images.isEmpty {
+                    // Allow ONLY swipe UP to add images
+                    if vertical < -80 && abs(vertical) > abs(horizontal) {
+                        openPhotoPicker()
+                        HapticManager.impact(.medium)
+                    }
+                    return
+                }
+
+                // ───────────────
+                // IMAGES PRESENT
+                // ───────────────
                 if abs(horizontal) > abs(vertical) {
                     if horizontal < -60 {
                         nextImage()
@@ -317,6 +337,5 @@ struct BundleViewerView: View {
                 }
             }
     }
-
 
 }

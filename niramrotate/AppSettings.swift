@@ -16,6 +16,14 @@ final class AppSettings: ObservableObject {
     private let pinarchiveKey = "enable_pinarchive"
     private let shownsfwKey = "enable_shownsfw"
     private let blurnsfwbundleKey = "enable_blurnsfwbundle"
+    private let pagerStyleKey = "pager_style_dots"
+
+    @Published var usePagerDots: Bool {
+        didSet {
+            UserDefaults.standard.set(usePagerDots, forKey: pagerStyleKey)
+        }
+    }
+
 
     @Published var hapticsEnabled: Bool {
         didSet { UserDefaults.standard.set(hapticsEnabled, forKey: hapticsKey) }
@@ -45,5 +53,8 @@ final class AppSettings: ObservableObject {
 
         self.blurNSFWBundleEnabled =
             UserDefaults.standard.bool(forKey: blurnsfwbundleKey)
+        
+        self.usePagerDots =
+            UserDefaults.standard.bool(forKey: pagerStyleKey)
     }
 }
