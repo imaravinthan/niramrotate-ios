@@ -28,8 +28,11 @@ final class ShopViewModel: ObservableObject {
         isLoading = true
 
         do {
+            let prefs = ShopPreferences.shared
             let fetched = try await WallhavenAPI.fetch(
                 page: page,
+                query: filters.query,
+                preferences: prefs,
                 filters: filters
             )
 
@@ -45,5 +48,9 @@ final class ShopViewModel: ObservableObject {
 
     func markSeen(_ wallpaper: ShopWallpaper) {
         prefs.markSeen(wallpaper.id)
+    }
+    
+    func resetAndReload() async{
+        await loadInitial()
     }
 }

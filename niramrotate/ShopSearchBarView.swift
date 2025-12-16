@@ -10,7 +10,11 @@ import SwiftUI
 struct ShopSearchBarView: View {
 
     @Binding var query: String
+    let onSubmit: () -> Void
+    let onClear: () -> Void
     let onFilterTap: () -> Void
+
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         HStack(spacing: 10) {
@@ -20,12 +24,28 @@ struct ShopSearchBarView: View {
                     .foregroundColor(.secondary)
 
                 TextField("Search wallpapers", text: $query)
+                    .focused($isFocused)
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
+                    .submitLabel(.search)
+                    .onSubmit {
+                        onSubmit()
+                    }
+
+                if !query.isEmpty {
+                    Button {
+                        query = ""
+                        onClear()
+                        isFocused = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
             .padding(10)
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
 
             Button(action: onFilterTap) {
                 Image(systemName: "slider.horizontal.3")

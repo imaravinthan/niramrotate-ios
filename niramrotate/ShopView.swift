@@ -23,35 +23,34 @@ struct ShopView: View {
     
     var body: some View {
         NavigationStack {
-            ShopFeedView(
-                wallpapers: vm.wallpapers,
-                onReachBottom: {
-                    Task { await vm.loadNext() }
-                },
-                onOptionsTap: { wp in
-                    selectedWallpaper = wp
-                    showActionSheet = true
-                }
-            )
-            .navigationTitle("Shop")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        print("Filter button tapped")
-                        showFilters.toggle()
-                    } label: {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
+            VStack(spacing: 0) {
+                ShopSearchBarView(
+                    query: $vm.filters.query,
+                    onSubmit: {
+                        Task { await vm.resetAndReload() }
+                    },
+                    onClear: {
+                        Task { await vm.resetAndReload() }
+                    },
+                    onFilterTap: {
+                        showFilters = true
                     }
-                }
-
-                ToolbarItem(placement: .principal) {
-                    TextField("Search wallpapers", text: $vm.filters.query)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 260)
-                        .onSubmit {
-                            Task { await vm.loadInitial() }
-                        }
-                }
+                )
+                
+                ShopFeedView(
+                    wallpapers: vm.wallpapers,
+                    onReachBottom: {
+                        Task { await vm.loadNext() }
+                    },
+                    onOptionsTap: { wp in
+                        selectedWallpaper = wp
+                        showActionSheet = true
+                    },
+                    onPullToRefresh:{
+                        Task {await vm.resetAndReload() }
+                    }
+                )
+                .navigationTitle("Shop")
             }
         }
         .task {
@@ -83,7 +82,15 @@ struct ShopView: View {
             }
         }
         .animation(.easeOut, value: showActionSheet)
-
+        .sheet(isPresented: $showFilters) {
+            ShopFilterView(
+                filters: $vm.filters,
+                onApply: {
+                    Task { await vm.resetAndReload() }
+                    showFilters = false
+                }
+            )
+        }
     }
 
     private func handleAction(
@@ -91,10 +98,6 @@ struct ShopView: View {
         wallpaper: ShopWallpaper
     ) {
         switch action {
-
-//        case .menu:
-//            selectedWallpaper = wallpaper
-//            showActionSheet = true
 
         case .download:
             ImageDownloader.saveToPhotos(url: wallpaper.fullURL)

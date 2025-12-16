@@ -12,6 +12,7 @@ struct ShopFeedView: View {
     let wallpapers: [ShopWallpaper]
     let onReachBottom: () -> Void
     let onOptionsTap: (ShopWallpaper) -> Void
+    let onPullToRefresh: () async -> Void
 
     var body: some View {
         ScrollView {
@@ -27,6 +28,9 @@ struct ShopFeedView: View {
                     }
             }
             .padding(.vertical)
+            .refreshable {
+                await onPullToRefresh()
+            }
         }
     }
 }

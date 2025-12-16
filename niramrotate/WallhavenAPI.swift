@@ -11,6 +11,8 @@ enum WallhavenAPI {
 
     static func fetch(
         page: Int,
+        query: String,
+        preferences: ShopPreferences,
         filters: ShopSearchFilters
     ) async throws -> [ShopWallpaper] {
 
@@ -28,7 +30,7 @@ enum WallhavenAPI {
         items.append(
             .init(
                 name: "categories",
-                value: filters.showAnime ? "111" : "110"
+                value: filters.showAnime ? "111" : "001"
             )
         )
 
@@ -40,8 +42,14 @@ enum WallhavenAPI {
             )
         )
 
-        if !filters.query.isEmpty {
-            items.append(.init(name: "q", value: filters.query))
+//        if !filters.query.isEmpty {
+//            items.append(.init(name: "q", value: filters.query))
+//        }
+        
+        if !query.trimmingCharacters(in: .whitespaces).isEmpty {
+            components.queryItems?.append(
+                .init(name: "q", value: query)
+            )
         }
 
         components.queryItems = items

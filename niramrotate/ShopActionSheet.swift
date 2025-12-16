@@ -75,7 +75,7 @@ struct ShopActionSheet: View {
         role: ButtonRole? = nil,
         foreground: Color = .blue,
         font: Font = .headline,
-        background: Color = .white.opacity(0.2),
+        background: Color = .white.opacity(0.3),
         action: @escaping () -> Void
     ) -> some View {
         Button(role: role, action: action) {
