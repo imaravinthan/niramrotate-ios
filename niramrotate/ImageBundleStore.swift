@@ -29,6 +29,18 @@ final class ImageBundleStore {
     // MARK: - Bundle CRUD
 
     func createBundle(name: String, isNSFW: Bool) throws -> ImageBundle {
+        
+        if bundleExists(named: name) {
+                throw NSError(
+                    domain: "BundleError",
+                    code: 409,
+                    userInfo: [
+                        NSLocalizedDescriptionKey:
+                        "A bundle named \"\(name)\" already exists."
+                    ]
+                )
+            }
+        
         let bundle = ImageBundle(
             id: UUID(),
             name: name,
@@ -37,7 +49,7 @@ final class ImageBundleStore {
             isArchived: false,
             isNSFW: isNSFW
         )
-
+        
         let bundleURL = baseURL.appendingPathComponent(bundle.id.uuidString)
         let imagesURL = bundleURL.appendingPathComponent("images")
 
@@ -159,26 +171,6 @@ final class ImageBundleStore {
         return image
     }
     
-//    func deleteEncryptedImage(
-//        _ url: URL,
-//        from bundle: ImageBundle
-//    ) throws {
-//
-//        let fm = FileManager.default
-//        try fm.removeItem(at: url)
-//
-//        // update manifest
-//        let manifestURL = baseURL
-//            .appendingPathComponent(bundle.id.uuidString)
-//            .appendingPathComponent("manifest.json")
-//
-//        let data = try Data(contentsOf: manifestURL)
-//        var updated = try JSONDecoder().decode(ImageBundle.self, from: data)
-//        updated.imageCount = max(0, updated.imageCount - 1)
-//
-//        let encoded = try JSONEncoder().encode(updated)
-//        try encoded.write(to: manifestURL, options: .atomic)
-//    }
     func deleteEncryptedImage(_ url: URL, from bundle: ImageBundle) throws {
         try FileManager.default.removeItem(at: url)
 
@@ -304,24 +296,6 @@ extension ImageBundleStore {
             try data.write(to: url, options: .atomic)
     }
     
-//    private func update(
-//        bundleID: UUID,
-//        mutate: (inout ImageBundle) -> Void
-//    ) throws {
-//        let manifestURL = baseURL
-//            .appendingPathComponent(bundleID.uuidString)
-//            .appendingPathComponent("manifest.json")
-//
-//        var bundle = try JSONDecoder().decode(
-//            ImageBundle.self,
-//            from: Data(contentsOf: manifestURL)
-//        )
-//
-//        mutate(&bundle)
-//
-//        let data = try JSONEncoder().encode(bundle)
-//        try data.write(to: manifestURL, options: .atomic)
-//    }
     
     func update(_ bundle: ImageBundle) throws {
             let url = baseURL
@@ -335,4 +309,11 @@ extension ImageBundleStore {
     func bundleURL(for bundle: ImageBundle) -> URL {
         baseURL.appendingPathComponent(bundle.id.uuidString)
     }
+    
+    func bundleExists(named name: String) -> Bool {
+        loadAllBundles().contains {
+            $0.name.caseInsensitiveCompare(name) == .orderedSame
+        }
+    }
+
 }

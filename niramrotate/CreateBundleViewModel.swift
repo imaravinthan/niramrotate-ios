@@ -35,14 +35,34 @@ final class CreateBundleViewModel: ObservableObject {
 
     @Published var showPicker = false
     @Published var showDeleteSheet = false
+    @Published var isDuplicateName = false
 
     private var importedItemIDs = Set<String>()
+    
+    private var cancellables = Set<AnyCancellable>()
 
+    init() {
+        $bundleName
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] name in
+                guard let self else { return }
+                let trimmed = name.trimmingCharacters(in: .whitespaces)
+                self.isDuplicateName =
+                    !trimmed.isEmpty &&
+                    ImageBundleStore.shared.bundleExists(named: trimmed)
+            }
+            .store(in: &cancellables)
+    }
+
+    
     var canCreate: Bool {
         !bundleName.trimmingCharacters(in: .whitespaces).isEmpty &&
         !previews.isEmpty &&
-        !isCreating
+        !isCreating &&
+        !isDuplicateName
     }
+
 
     // MARK: - Picker import (append-only)
     func appendPickedItems() async {

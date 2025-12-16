@@ -174,7 +174,14 @@ struct CreateBundleView: View {
                 Section("Bundle Name") {
                     TextField("e.g. Work Focus", text: $vm.bundleName)
                         .textInputAutocapitalization(.words)
+
+                    if vm.isDuplicateName {
+                        Text("A bundle with this name already exists.")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 }
+
 
                 // MARK: - Images (Reddit-style)
                 Section("Images") {
