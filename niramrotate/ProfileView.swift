@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import Combine
 
 struct ProfileView: View {
 
     @State private var showClearBundlesConfirm = false
     @State private var showResetConfirm = false
     @State private var errorMessage: String?
+    @StateObject private var shopPrefs = ShopPreferences.shared
 
     var body: some View {
         NavigationStack {
@@ -47,8 +49,13 @@ struct ProfileView: View {
                             set: { AppSettings.shared.usePagerDots = $0 }
                         )
                     )
-
                 }
+                
+                Section("Shop Content") {
+                    Toggle("Show NSFW content", isOn: $shopPrefs.showNSFW)
+                    Toggle("Show Anime wallpapers", isOn: $shopPrefs.showAnime)
+                }
+
                 
                 Section("Danger Zone") {
 
@@ -108,3 +115,4 @@ struct ProfileView: View {
         }
     }
 }
+

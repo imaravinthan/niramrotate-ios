@@ -14,7 +14,12 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Library", systemImage: "photo.on.rectangle")
                 }
-
+            
+            ShopView()
+                .tabItem {
+                    Label("Shop", systemImage: "sparkles")
+                }
+                
             CreateBundleView()
                 .tabItem {
                     Label("Create", systemImage: "plus.circle")
