@@ -13,46 +13,66 @@ enum WallhavenAPI {
 
     static func fetchWallpapers(
         page: Int,
-        preferences: ShopPreferences
+        filters: ShopSearchFilters
     ) async throws -> [ShopWallpaper] {
 
         var components = URLComponents(string: baseURL)!
-        components.queryItems = [
-            .init(name: "atleast", value: "1170x2532"),
-            .init(name: "sorting", value: "date_added"),
-            .init(name: "order", value: "desc"),
-            .init(name: "page", value: "\(page)"),
-            .init(name: "categories", value: preferences.showAnime ? "110" : "100"),
-            .init(name: "purity", value: preferences.showNSFW ? "111" : "100"),
-            .init(name: "q", value: "portrait")
-        ]
+        var queryItems: [URLQueryItem] = []
 
+        // Search query
+        if !filters.query.isEmpty {
+            queryItems.append(
+                .init(name: "q", value: filters.query)
+            )
+        }
 
-        let url = components.url!
-        let (data, _) = try await URLSession.shared.data(from: url)
+        // Ratios (portrait)
+        queryItems.append(
+            .init(name: "ratios", value: filters.ratios.joined(separator: ","))
+        )
 
-        let response = try JSONDecoder().decode(WallhavenResponse.self, from: data)
+        // Minimum resolution
+        queryItems.append(
+            .init(name: "atleast", value: filters.atleast)
+        )
 
-        return response.data.compactMap { item in
-            let parts = item.resolution.split(separator: "x")
-            guard
-                parts.count == 2,
-                let w = Int(parts[0]),
-                let h = Int(parts[1]),
-                h > w        // 🔑 PORTRAIT ONLY
-            else { return nil }
+        // Categories
+        // General(1), Anime(2), People(4)
+        let categories = filters.showAnime ? "110" : "100"
+        queryItems.append(.init(name: "categories", value: categories))
+
+        // Purity
+        // SFW(1), Sketchy(2), NSFW(4)
+        let purity = filters.showNSFW ? "111" : "100"
+        queryItems.append(.init(name: "purity", value: purity))
+
+        // Sorting
+        queryItems.append(.init(name: "sorting", value: "date_added"))
+        queryItems.append(.init(name: "order", value: "desc"))
+        queryItems.append(.init(name: "page", value: "\(page)"))
+
+        components.queryItems = queryItems
+
+        let (data, _) = try await URLSession.shared.data(from: components.url!)
+        let decoded = try JSONDecoder().decode(WallhavenResponse.self, from: data)
+
+        return decoded.data.map {
+            let parts = $0.resolution.split(separator: "x")
+            let w = Int(parts.first ?? "0") ?? 0
+            let h = Int(parts.last ?? "0") ?? 0
 
             return ShopWallpaper(
-                id: item.id,
-                previewURL: URL(string: item.thumbs.small)!,
-                fullURL: URL(string: item.path)!,
+                id: $0.id,
+                previewURL: URL(string: $0.thumbs.small)!,
+                fullURL: URL(string: $0.path)!,
                 width: w,
                 height: h,
-                isNSFW: item.purity != "sfw"
+                isNSFW: $0.purity != "sfw"
             )
         }
     }
 }
+
 
 struct WallhavenResponse: Decodable {
     let data: [WallhavenItem]

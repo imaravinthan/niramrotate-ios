@@ -11,27 +11,27 @@ import Combine
 final class ShopViewModel: ObservableObject {
 
     @Published var wallpapers: [ShopWallpaper] = []
+    @Published var index: Int = 0
     @Published var isLoading = false
+    @Published var filters = ShopSearchFilters()
 
     private var page = 1
-    private var preferences: ShopPreferences
 
-    init(preferences: ShopPreferences = .shared) {
-        self.preferences = preferences
-
-        preferences.$showNSFW
-            .merge(with: preferences.$showAnime)
-            .sink { [weak self] _ in
-                Task { await self?.reload() }
-            }
-            .store(in: &cancellables)
+    var currentWallpaper: ShopWallpaper? {
+        guard index < wallpapers.count else { return nil }
+        return wallpapers[index]
     }
 
-    private var cancellables = Set<AnyCancellable>()
+    // MARK: - Lifecycle
 
-    func reload() async {
-        page = 1
+    func loadInitial() async {
+        await resetAndReload()
+    }
+
+    func resetAndReload() async {
         wallpapers.removeAll()
+        index = 0
+        page = 1
         await loadNextPage()
     }
 
@@ -42,19 +42,36 @@ final class ShopViewModel: ObservableObject {
         do {
             let fetched = try await WallhavenAPI.fetchWallpapers(
                 page: page,
-                preferences: preferences
+                filters: filters
             )
 
-            let filtered = fetched.filter {
-                $0.height > $0.width // 🔑 portrait only
+            let unseen = fetched.filter {
+                !ShopPreferences.shared.hasSeen($0.id)
             }
 
-            wallpapers.append(contentsOf: filtered)
+            wallpapers.append(contentsOf: unseen)
             page += 1
         } catch {
-            print("❌ Shop fetch failed:", error)
+            print("❌ Wallhaven error:", error)
         }
 
         isLoading = false
     }
+
+    func next() async {
+        guard index + 1 < wallpapers.count else { return }
+
+        let current = wallpapers[index]
+        ShopPreferences.shared.markSeen(current.id)
+
+        index += 1
+
+        if index >= wallpapers.count - 3 {
+            await loadNextPage()
+        }
+    }
+    
+    func loadNextPageIfNeeded() async {
+            await loadNextPage()
+        }
 }

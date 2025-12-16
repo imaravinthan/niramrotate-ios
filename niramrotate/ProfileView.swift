@@ -51,10 +51,10 @@ struct ProfileView: View {
                     )
                 }
                 
-                Section("Shop Content") {
-                    Toggle("Show NSFW content", isOn: $shopPrefs.showNSFW)
-                    Toggle("Show Anime wallpapers", isOn: $shopPrefs.showAnime)
-                }
+//                Section("Shop Content") {
+//                    Toggle("Show NSFW content", isOn: $shopPrefs.showNSFW)
+//                    Toggle("Show Anime wallpapers", isOn: $shopPrefs.showAnime)
+//                }
 
                 
                 Section("Danger Zone") {
