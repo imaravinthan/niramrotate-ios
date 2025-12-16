@@ -14,10 +14,21 @@ extension UIApplication {
             return nil
         }
 
-        var top = root
-        while let presented = top.presentedViewController {
-            top = presented
+        return root.topMost
+    }
+}
+private extension UIViewController {
+
+    var topMost: UIViewController {
+        if let presented = presentedViewController {
+            return presented.topMost
         }
-        return top
+        if let nav = self as? UINavigationController {
+            return nav.visibleViewController?.topMost ?? nav
+        }
+        if let tab = self as? UITabBarController {
+            return tab.selectedViewController?.topMost ?? tab
+        }
+        return self
     }
 }
