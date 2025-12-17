@@ -23,7 +23,7 @@ struct ShopPostView: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-
+            
             AsyncImage(url: wallpaper.previewURL) { phase in
                 switch phase {
                 case .success(let image):
@@ -32,14 +32,14 @@ struct ShopPostView: View {
                         .scaledToFill()
                         .frame(maxWidth: .infinity)
                         .clipped()
-
+                    
                 default:
                     Rectangle()
                         .fill(Color.black)
                         .overlay(ProgressView())
                 }
             }
-
+            
             Button {
                 onOptionsTap(wallpaper)
             } label: {
@@ -50,15 +50,16 @@ struct ShopPostView: View {
                     .clipShape(Circle())
             }
             .padding()
-
+            
             if wallpaper.isNSFW {
                 Text("NSFW")
-                    .font(.caption)
-                    .padding(6)
-                    .background(.red)
-                    .cornerRadius(6)
-                    .foregroundColor(.white)
-                    .padding([.leading, .top])
+                    .font(.caption2.bold())
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(.black.opacity(0.7))
+                    .clipShape(Capsule())
+                    .padding(8)
             }
         }
     }

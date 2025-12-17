@@ -36,12 +36,22 @@ struct ShopPostRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+//                if wallpaper.purity.contains("nsfw") {
+//                    Text("NSFW")
+//                        .font(.caption2)
+//                        .foregroundColor(.red)
+//                }
                 if wallpaper.isNSFW {
                     Text("NSFW")
-                        .font(.caption2)
+                        .font(.caption2.bold())
                         .foregroundColor(.red)
-                }
-
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.black.opacity(0.7))
+                        .clipShape(Capsule())
+                        .padding(8)
+                    }
+                
                 Spacer()
             }
             .padding(.horizontal, 8)

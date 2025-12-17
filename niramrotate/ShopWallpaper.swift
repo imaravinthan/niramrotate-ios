@@ -13,7 +13,23 @@ struct ShopWallpaper: Identifiable, Hashable {
     let fullURL: URL
     let width: Int
     let height: Int
-    let isNSFW: Bool
+    let purity: String
+    var isNSFW: Bool {
+            purity != "sfw"
+        }
+    var isPortrait: Bool {
+            height > width
+        }
+
+    var isLandscape: Bool {
+            width >= height
+        }
+    
+    enum Purity: String {
+            case sfw
+            case sketchy
+            case nsfw
+        }
 }
 
 

@@ -8,26 +8,83 @@
 import Foundation
 
 enum WallhavenAPI {
+
     static let baseURL = "https://wallhaven.cc/api/v1/search"
 
-    static func fetch(filters: ShopFilters, page: Int) async throws -> [ShopWallpaper] {
-        let components = buildQuery(from: filters, page: page)
-        let (data, _) = try await URLSession.shared.data(from: components.url!)
-        let response = try JSONDecoder().decode(Response.self, from: data)
-        let filtered = response.data.filter { item in
-            switch item.purity {
-            case "sfw":
-                return filters.purity.contains(.sfw)
-            case "sketchy":
-                return filters.purity.contains(.sketchy)
-            case "nsfw":
-                return filters.purity.contains(.nsfw)
-            default:
-                return false
-            }
+    static func fetch(
+        filters: ShopFilters,
+        page: Int
+    ) async throws -> [ShopWallpaper] {
+        if filters.wantsMixedRatios {
+            async let portrait = fetchSingleRatio(
+                filters: filters,
+                ratio: "9x16",
+                page: page
+            )
+
+            async let landscape = fetchSingleRatio(
+                filters: filters,
+                ratio: "16x9",
+                page: page
+            )
+
+            let (p, l) = try await (portrait, landscape)
+            return p + l
+        } else {
+            let ratio = filters.aspectRatios.first?.rawValue
+            return try await fetchSingleRatio(
+                filters: filters,
+                ratio: ratio,
+                page: page
+            )
         }
 
-        return filtered.map {
+//        let components = buildQuery(from: filters, page: page)
+//
+//        let (data, _) = try await URLSession.shared.data(from: components.url!)
+//        let response = try JSONDecoder().decode(Response.self, from: data)
+//        
+//        return response.data.map {
+//            let parts = $0.resolution.split(separator: "x")
+//            return ShopWallpaper(
+//                id: $0.id,
+//                previewURL: URL(string: $0.thumbs.small)!,
+//                fullURL: URL(string: $0.path)!,
+//                width: Int(parts.first ?? "0") ?? 0,
+//                height: Int(parts.last ?? "0") ?? 0,
+//                purity: $0.purity
+//            )
+//        }
+    }
+    
+    private static func fetchSingleRatio(
+        filters: ShopFilters,
+        ratio: String?,
+        page: Int
+    ) async throws -> [ShopWallpaper] {
+
+        var components = URLComponents(string: baseURL)!
+        var items: [URLQueryItem] = []
+
+        if !filters.query.isEmpty {
+            items.append(.init(name: "q", value: filters.query))
+        }
+
+        items.append(.init(name: "sorting", value: filters.sorting.rawValue))
+        items.append(.init(name: "categories", value: filters.categoryMask()))
+        items.append(.init(name: "purity", value: filters.purityMask()))
+
+        if let ratio {
+            items.append(.init(name: "ratios", value: ratio))
+        }
+
+        items.append(.init(name: "page", value: "\(page)"))
+        components.queryItems = items
+
+        let (data, _) = try await URLSession.shared.data(from: components.url!)
+        let response = try JSONDecoder().decode(Response.self, from: data)
+
+        return response.data.map {
             let parts = $0.resolution.split(separator: "x")
             return ShopWallpaper(
                 id: $0.id,
@@ -35,67 +92,77 @@ enum WallhavenAPI {
                 fullURL: URL(string: $0.path)!,
                 width: Int(parts[0]) ?? 0,
                 height: Int(parts[1]) ?? 0,
-                isNSFW: $0.purity != "sfw"
+                purity: $0.purity
             )
         }
     }
 
-    static func buildQuery(from filters: ShopFilters, page: Int) -> URLComponents {
+
+    static func buildQuery(
+        from filters: ShopFilters,
+        page: Int
+    ) -> URLComponents {
+
         var components = URLComponents(string: baseURL)!
         var items: [URLQueryItem] = []
 
-        // Search query
-        if !filters.query.isEmpty {
+        // Search
+        if !filters.query.trimmingCharacters(in: .whitespaces).isEmpty {
             items.append(.init(name: "q", value: filters.query))
+            items.append(.init(name: "sorting", value: "relevance"))
+        } else {
+            items.append(.init(name: "sorting", value: filters.sorting.rawValue))
         }
 
-        // Sorting
-//        items.append(.init(name: "sorting", value: filters.sorting.rawValue))
-        let sortingValue =
-            filters.query.isEmpty
-            ? filters.sorting.rawValue
-            : "relevance"
-
-        items.append(.init(name: "sorting", value: sortingValue))
-
-        items.append(.init(name: "page", value: "\(page)"))
-        
         // Categories
         items.append(.init(
             name: "categories",
             value: filters.categoryMask()
         ))
-        
+
         // Purity
         items.append(.init(
             name: "purity",
             value: filters.purityMask()
         ))
-
-        // Aspect ratios
+        
+        // Ratios
+//        if !filters.aspectRatios.isEmpty {
+//            items.append(.init(
+//                name: "ratios",
+//                value: filters.aspectRatios.map { $0.rawValue }.joined(separator: ",")
+//            ))
+//        }
         if !filters.aspectRatios.isEmpty {
-            items.append(.init(
-                name: "ratios",
-                value: filters.aspectRatios.joined(separator: ",")
-            ))
+            let ratios = filters.aspectRatios
+                    .map { $0.rawValue }
+                    .joined(separator: ",")
+            print("Ratios: ", ratios)
+            items.append(
+                URLQueryItem(
+                    name: "ratios",
+                    value: ratios
+                )
+            )
         }
 
-        // Resolution
-        if !filters.resolutions.isEmpty {
-            items.append(.init(
-                name: "atleast",
-                value: filters.resolutions.first
-            ))
-        }
 
         items.append(.init(name: "page", value: "\(page)"))
 
         components.queryItems = items
+
+        if let url = components.url {
+            let request = URLRequest(url: url)
+//            print("RAW REQUEST URL:", request.url?.absoluteString ?? "nil")
+//            print("PERCENT ENCODED URL:", components.percentEncodedQuery ?? "")
+        }
+
         print("🔍 WALLHAVEN QUERY:", components.url?.absoluteString ?? "nil")
         return components
     }
-
 }
+
+// MARK: - Response Models
 
 private struct Response: Decodable {
     let data: [Item]

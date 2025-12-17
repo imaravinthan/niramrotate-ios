@@ -15,7 +15,8 @@ struct ShopDetailsView: View {
             Section("Image") {
                 Text("ID: \(wallpaper.id)")
                 Text("Resolution: \(wallpaper.width)x\(wallpaper.height)")
-                Text("NSFW: \(wallpaper.isNSFW ? "Yes" : "No")")
+                Text("NSFW: \(wallpaper.purity.contains("nsfw") ? "Yes" : "No")")
+//                Text("Size:" \(wallpap))
             }
 
             Section {
