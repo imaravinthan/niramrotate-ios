@@ -12,6 +12,7 @@ struct VaultUnlockView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var isUnlocked = false
     @State private var errorMessage: String?
+    static let shared = VaultUnlockView()
 
     var body: some View {
         ZStack {

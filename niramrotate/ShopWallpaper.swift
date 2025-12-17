@@ -9,12 +9,25 @@ import Foundation
 
 struct ShopWallpaper: Identifiable {
     let id: String
+    
+    // MARK: - URL
     let previewURL: URL
     let fullURL: URL
+    let webURL: URL
+    
+    // MARK: - Meta
+    let views: Int
+    let favorites: Int
+    let purity: String
+    let category: String
+    
     let width: Int
     let height: Int
-    let purity: String
     let ratio: String
+    
+    let fileSize: Int
+    let fileType: String
+    let createdAt: String
     
     // MARK: - Orientation helpers
 
@@ -33,6 +46,10 @@ struct ShopWallpaper: Identifiable {
     /// Treat sketchy + nsfw as NSFW (your decision)
     var isNSFW: Bool {
         purity == "sketchy" || purity == "nsfw"
+    }
+    
+    var fileSizeMB: String {
+        String(format: "%2f MB", Double(fileSize)/1_048_576)
     }
 }
 

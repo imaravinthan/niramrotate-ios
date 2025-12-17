@@ -14,6 +14,9 @@ struct ProfileView: View {
     @State private var showResetConfirm = false
     @State private var errorMessage: String?
     @StateObject private var shopPrefs = ShopPreferences.shared
+    @StateObject private var keyManager = WallhavenKeyManager.shared
+    @State private var revealedKey: String?
+    @State private var showKeyEditor = false
 
     var body: some View {
         NavigationStack {
@@ -51,11 +54,31 @@ struct ProfileView: View {
                     )
                 }
                 
-//                Section("Shop Content") {
-//                    Toggle("Show NSFW content", isOn: $shopPrefs.showNSFW)
-//                    Toggle("Show Anime wallpapers", isOn: $shopPrefs.showAnime)
-//                }
+                Section("Shop Content") {
 
+                    Button {
+                        Task {
+                            revealedKey = try? await WallhavenKeyStore.loadWithBiometrics()
+                            showKeyEditor = true
+                        }
+                    } label: {
+                        HStack {
+                            Text("Wallhaven API Key")
+                            Spacer()
+                            Text(revealedKey == nil ? "Not Set" : "••••••••")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .sheet(isPresented: $showKeyEditor) {
+                    WallhavenKeyEditorView(existingKey: revealedKey) { newKey in
+                        do {
+                            try WallhavenKeyStore.save(newKey)
+                        } catch {
+                            print("❌ Failed to save API key:", error)
+                        }
+                    }
+                }
                 
                 Section("Danger Zone") {
 
@@ -94,6 +117,13 @@ struct ProfileView: View {
                     resetApp()
                 }
             }
+//            .sheet(isPresented: $showKeyEditor) {
+//                WallhavenKeyEditorView(existingKey: revealedKey) { newKey in
+//                    Task {
+//                        try? await WallhavenKeyManager.shared.save(newKey)
+//                    }
+//                }
+//            }
         }
     }
 
