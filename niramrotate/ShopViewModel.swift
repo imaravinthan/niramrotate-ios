@@ -11,7 +11,7 @@ import Combine
 final class ShopViewModel: ObservableObject {
 
     @Published var wallpapers: [ShopWallpaper] = []
-    @Published var filters = ShopSearchFilters()
+    @Published var filters = ShopFilters()
     @Published var isLoading = false
 
     private var page = 1
@@ -30,10 +30,8 @@ final class ShopViewModel: ObservableObject {
         do {
             let prefs = ShopPreferences.shared
             let fetched = try await WallhavenAPI.fetch(
-                page: page,
-                query: filters.query,
-                preferences: prefs,
-                filters: filters
+                filters: filters,
+                page: page
             )
 
             let unseen = fetched.filter { !prefs.hasSeen($0.id) }

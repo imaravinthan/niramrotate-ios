@@ -25,7 +25,7 @@ struct ShopView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 ShopSearchBarView(
-                    query: $vm.filters.query,
+                    filters: $vm.filters,
                     onSubmit: {
                         Task { await vm.resetAndReload() }
                     },
@@ -46,7 +46,7 @@ struct ShopView: View {
                         selectedWallpaper = wp
                         showActionSheet = true
                     },
-                    onPullToRefresh:{
+                    resetAndReload:{
                         Task {await vm.resetAndReload() }
                     }
                 )

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ShopSearchBarView: View {
 
-    @Binding var query: String
+    @Binding var filters: ShopFilters
     let onSubmit: () -> Void
     let onClear: () -> Void
     let onFilterTap: () -> Void
@@ -23,18 +23,16 @@ struct ShopSearchBarView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
 
-                TextField("Search wallpapers", text: $query)
+                TextField("Search wallpapers", text: $filters.query)
                     .focused($isFocused)
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
                     .submitLabel(.search)
-                    .onSubmit {
-                        onSubmit()
-                    }
+                    .onSubmit(onSubmit)
 
-                if !query.isEmpty {
+                if !filters.query.isEmpty {
                     Button {
-                        query = ""
+                        filters.query = ""
                         onClear()
                         isFocused = false
                     } label: {

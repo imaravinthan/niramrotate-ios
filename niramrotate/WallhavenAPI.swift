@@ -8,52 +8,10 @@
 import Foundation
 
 enum WallhavenAPI {
+    static let baseURL = "https://wallhaven.cc/api/v1/search"
 
-    static func fetch(
-        page: Int,
-        query: String,
-        preferences: ShopPreferences,
-        filters: ShopSearchFilters
-    ) async throws -> [ShopWallpaper] {
-
-        var components = URLComponents(string: "https://wallhaven.cc/api/v1/search")!
-
-        var items: [URLQueryItem] = [
-            .init(name: "ratios", value: "9x16"),
-            .init(name: "atleast", value: "1170x2532"),
-            .init(name: "sorting", value: "date_added"),
-            .init(name: "order", value: "desc"),
-            .init(name: "page", value: "\(page)")
-        ]
-
-        // Categories: General + People
-        items.append(
-            .init(
-                name: "categories",
-                value: filters.showAnime ? "111" : "001"
-            )
-        )
-
-        // Purity
-        items.append(
-            .init(
-                name: "purity",
-                value: filters.showNSFW ? "111" : "100"
-            )
-        )
-
-//        if !filters.query.isEmpty {
-//            items.append(.init(name: "q", value: filters.query))
-//        }
-        
-        if !query.trimmingCharacters(in: .whitespaces).isEmpty {
-            components.queryItems?.append(
-                .init(name: "q", value: query)
-            )
-        }
-
-        components.queryItems = items
-
+    static func fetch(filters: ShopFilters, page: Int) async throws -> [ShopWallpaper] {
+        let components = buildQuery(from: filters, page: page)
         let (data, _) = try await URLSession.shared.data(from: components.url!)
         let response = try JSONDecoder().decode(Response.self, from: data)
 
@@ -69,6 +27,55 @@ enum WallhavenAPI {
             )
         }
     }
+
+    static func buildQuery(from filters: ShopFilters, page: Int) -> URLComponents {
+        var components = URLComponents(string: baseURL)!
+        var items: [URLQueryItem] = []
+
+        // Search query
+        if !filters.query.isEmpty {
+            items.append(.init(name: "q", value: filters.query))
+        }
+
+        // Sorting
+        items.append(.init(name: "sorting", value: filters.sorting.rawValue))
+        items.append(.init(name: "page", value: "\(page)"))
+        
+        // Categories
+        items.append(.init(
+            name: "categories",
+            value: filters.categoryMask()
+        ))
+        
+        // Purity
+        items.append(.init(
+            name: "purity",
+            value: filters.purityMask()
+        ))
+
+        // Aspect ratios
+        if !filters.aspectRatios.isEmpty {
+            items.append(.init(
+                name: "ratios",
+                value: filters.aspectRatios.joined(separator: ",")
+            ))
+        }
+
+        // Resolution
+        if !filters.resolutions.isEmpty {
+            items.append(.init(
+                name: "atleast",
+                value: filters.resolutions.first
+            ))
+        }
+
+        items.append(.init(name: "page", value: "\(page)"))
+
+        components.queryItems = items
+        print("🔍 WALLHAVEN QUERY:", components.url?.absoluteString ?? "nil")
+        return components
+    }
+
 }
 
 private struct Response: Decodable {
