@@ -12,82 +12,111 @@ struct ShopActionSheet: View {
     let wallpaper: ShopWallpaper
     let onSelect: (ShopPostAction) -> Void
     let onDismiss: () -> Void
-    
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         VStack(spacing: 12) {
 
+            // Drag indicator
             Capsule()
-                .fill(Color.secondary.opacity(0.5))
+                .fill(Color.secondary.opacity(0.4))
                 .frame(width: 40, height: 5)
                 .padding(.top, 8)
 
-            actionButton(
-                "Download",
-                systemImage: "arrow.down.to.line",
-                foreground: .blue
-            ) {
-                onSelect(.download)
+            // MARK: - Main actions
+            VStack(spacing: 0) {
+//                sheetButton("Download") {
+//                    onSelect(.download)
+//                }
+//                divider
+//                sheetButton("Share") {
+//                    onSelect(.share)
+//                }
+//                divider
+//                sheetButton("View Fullscreen") {
+//                    onSelect(.fullscreen)
+//                }
+//                divider
+//                sheetButton("Details") {
+//                    onSelect(.details)
+//                }
+                sheetButton("Download") {
+                    HapticManager.impact(.medium)
+                    onSelect(.download)
+                }
+                divider
+                sheetButton("Share") {
+                    HapticManager.impact(.medium)
+                    onSelect(.share)
+                }
+                divider
+                sheetButton("View Fullscreen") {
+                    HapticManager.impact(.medium)
+                    onSelect(.fullscreen)
+                }
+                divider
+                sheetButton("Details") {
+                    HapticManager.impact(.medium)
+                    onSelect(.details)
+                }
             }
-
-            actionButton(
-                "Share",
-                systemImage: "square.and.arrow.up",
-                foreground: .blue
-            ) {
-                onSelect(.share)
-            }
-
-            actionButton(
-                "View Fullscreen",
-                systemImage: "arrow.up.left.and.arrow.down.right",
-                foreground: .blue
-            ) {
-                onSelect(.fullscreen)
-            }
-
-            actionButton(
-                "Details",
-                systemImage: "info.circle",
-                foreground: .blue
-            ) {
-                onSelect(.details)
-            }
-
-            // 🔴 Cancel — red text, no capsule
-            Button("Cancel", role: .cancel) {
+            .background(
+                backgroundColor
+                    .background(.ultraThinMaterial)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: .black.opacity(0.15), radius: 10)
+            .animation(.easeInOut(duration: 0.2), value: colorScheme)
+            // MARK: - Cancel (separate block)
+            Button {
                 onDismiss()
+                HapticManager.impact(.medium)
+            } label: {
+                Text("Cancel")
+                    .font(.headline.bold())
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(
+                        backgroundColor
+                            .background(.ultraThinMaterial)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .shadow(color: .black.opacity(0.15), radius: 10)
+                    .animation(.easeInOut(duration: 0.2), value: colorScheme)
             }
-            .font(.headline.bold())
-            .foregroundColor(.red)
-            .padding(.top, 8)
 
         }
         .padding()
-        .background(.ultraThinMaterial)
-        .cornerRadius(16)
-        .padding()
+        .background(Color.black.opacity(0.15)) // dim behind
+        .ignoresSafeArea()
     }
 
-    @ViewBuilder
-    private func actionButton(
+    // MARK: - Helpers
+
+    private var divider: some View {
+        Divider().opacity(0.5)
+    }
+    
+    private var backgroundColor: Color {
+        if colorScheme == .dark {
+            Color.black.opacity(0.85)
+        } else {
+            Color.white.opacity(0.92)
+        }
+    }
+
+
+    private func sheetButton(
         _ title: String,
-        systemImage: String,
-        role: ButtonRole? = nil,
-        foreground: Color = .blue,
-        font: Font = .headline,
-        background: Color = .white.opacity(0.3),
         action: @escaping () -> Void
     ) -> some View {
-        Button(role: role, action: action) {
-            Label(title, systemImage: systemImage)
-                .font(font)
-                .fontWeight(.bold)
-                .foregroundColor(foreground)
+        Button(action: action) {
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.blue)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(background)
-                .clipShape(Capsule())
         }
     }
-
 }
