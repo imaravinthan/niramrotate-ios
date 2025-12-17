@@ -24,6 +24,8 @@ struct ShopView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+
+                // 🔹 Search Bar (always visible)
                 ShopSearchBarView(
                     filters: $vm.filters,
                     onSubmit: {
@@ -36,22 +38,45 @@ struct ShopView: View {
                         showFilters = true
                     }
                 )
-                
-                ShopFeedView(
-                    wallpapers: vm.wallpapers,
-                    onReachBottom: {
-                        Task { await vm.loadNext() }
-                    },
-                    onOptionsTap: { wp in
-                        selectedWallpaper = wp
-                        showActionSheet = true
-                    },
-                    resetAndReload:{
-                        Task {await vm.resetAndReload() }
+                .padding(.bottom, 8)
+
+                // 🔹 Content Area
+                Group {
+                    if vm.isEmptyResult {
+                        VStack {
+                            Spacer()
+                            Text("No wallpapers found")
+                                .foregroundColor(.secondary)
+                                .font(.callout)
+                                .opacity(0.8)
+                            Spacer()
+                        }
+                    } else if vm.wallpapers.isEmpty {
+                        VStack {
+                            Spacer()
+                            ProgressView("Loading…")
+                            Spacer()
+                        }
+                    } else {
+                        ShopFeedView(
+                            wallpapers: vm.wallpapers,
+                            onReachBottom: {
+                                Task { await vm.loadNext() }
+                            },
+                            onOptionsTap: { wp in
+                                selectedWallpaper = wp
+                                showActionSheet = true
+                            },
+                            resetAndReload: {
+                                Task { await vm.resetAndReload() }
+                            }
+                        )
                     }
-                )
-                .navigationTitle("Shop")
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .navigationTitle("Shop")
+            .navigationBarTitleDisplayMode(.large)
         }
         .task {
             await vm.loadInitial()

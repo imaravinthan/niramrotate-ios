@@ -14,8 +14,20 @@ enum WallhavenAPI {
         let components = buildQuery(from: filters, page: page)
         let (data, _) = try await URLSession.shared.data(from: components.url!)
         let response = try JSONDecoder().decode(Response.self, from: data)
+        let filtered = response.data.filter { item in
+            switch item.purity {
+            case "sfw":
+                return filters.purity.contains(.sfw)
+            case "sketchy":
+                return filters.purity.contains(.sketchy)
+            case "nsfw":
+                return filters.purity.contains(.nsfw)
+            default:
+                return false
+            }
+        }
 
-        return response.data.map {
+        return filtered.map {
             let parts = $0.resolution.split(separator: "x")
             return ShopWallpaper(
                 id: $0.id,
@@ -38,7 +50,14 @@ enum WallhavenAPI {
         }
 
         // Sorting
-        items.append(.init(name: "sorting", value: filters.sorting.rawValue))
+//        items.append(.init(name: "sorting", value: filters.sorting.rawValue))
+        let sortingValue =
+            filters.query.isEmpty
+            ? filters.sorting.rawValue
+            : "relevance"
+
+        items.append(.init(name: "sorting", value: sortingValue))
+
         items.append(.init(name: "page", value: "\(page)"))
         
         // Categories
