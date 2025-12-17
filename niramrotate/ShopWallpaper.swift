@@ -7,29 +7,33 @@
 import SwiftUI
 import Foundation
 
-struct ShopWallpaper: Identifiable, Hashable {
+struct ShopWallpaper: Identifiable {
     let id: String
     let previewURL: URL
     let fullURL: URL
     let width: Int
     let height: Int
     let purity: String
-    var isNSFW: Bool {
-            purity != "sfw"
-        }
+    let ratio: String
+    
+    // MARK: - Orientation helpers
+
     var isPortrait: Bool {
-            height > width
-        }
+        height > width
+    }
 
     var isLandscape: Bool {
-            width >= height
-        }
+        width > height
+    }
+
+    var isSquare: Bool {
+        width == height
+    }
     
-    enum Purity: String {
-            case sfw
-            case sketchy
-            case nsfw
-        }
+    /// Treat sketchy + nsfw as NSFW (your decision)
+    var isNSFW: Bool {
+        purity == "sketchy" || purity == "nsfw"
+    }
 }
 
 

@@ -18,54 +18,81 @@ final class ShopViewModel: ObservableObject {
 
     private var page = 1
     private let prefs = ShopPreferences.shared
+    private var portraitPage = 1
+    private var landscapePage = 1
+
 
     func loadInitial() async {
         page = 1
+        portraitPage = 1
+        landscapePage = 1
         wallpapers.removeAll()
         hasMorePages = true
         isEmptyResult = false
         await loadNext()
     }
 
+//    func loadNext() async {
+//        guard !isLoading, hasMorePages else { return }
+//
+//        isLoading = true
+//
+//        do {
+//            
+//            let fetched = try await WallhavenAPI.fetch(
+//                filters: filters,
+//                page: page
+//            )
+//
+//            let strictlyFiltered = fetched.filter { wp in
+//                switch filters.purity {
+//                case .sfw:
+//                    return wp.purity == "sfw"
+//                case .nsfw:
+//                    return true
+//                }
+//            }
+//
+//            if strictlyFiltered.isEmpty {
+//                hasMorePages = false
+//                isEmptyResult = wallpapers.isEmpty
+//            } else {
+//                let ordered = applyRatioPriority(strictlyFiltered)
+//                wallpapers.append(contentsOf: ordered)
+//
+////                wallpapers.append(contentsOf: strictlyFiltered)
+//                page += 1
+//            }
+//
+//        } catch {
+//            print("❌ Wallhaven fetch failed:", error)
+//            hasMorePages = false
+//        }
+//
+//        isLoading = false
+//    }
     func loadNext() async {
         guard !isLoading, hasMorePages else { return }
 
         isLoading = true
 
         do {
-            
-            let fetched = try await WallhavenAPI.fetch(
-                filters: filters,
-                page: page
-            )
+            let batch = try await fetchNextBatch()
 
-            let strictlyFiltered = fetched.filter { wp in
-                switch filters.purity {
-                case .sfw:
-                    return wp.purity == "sfw"
-                case .nsfw:
-                    return true
-                }
-            }
-
-            if strictlyFiltered.isEmpty {
+            if batch.isEmpty {
                 hasMorePages = false
-                isEmptyResult = wallpapers.isEmpty
             } else {
-                let ordered = applyRatioPriority(strictlyFiltered)
-                wallpapers.append(contentsOf: ordered)
-
-//                wallpapers.append(contentsOf: strictlyFiltered)
-                page += 1
+                wallpapers.append(contentsOf: batch)
             }
 
         } catch {
-            print("❌ Wallhaven fetch failed:", error)
+            print("❌ Ratio fetch failed:", error)
             hasMorePages = false
         }
 
         isLoading = false
     }
+
 
     func resetAndReload() async {
         guard !isLoading else { return }
@@ -75,6 +102,68 @@ final class ShopViewModel: ObservableObject {
     func markSeen(_ wallpaper: ShopWallpaper) {
         prefs.markSeen(wallpaper.id)
     }
+    
+    private func fetchNextBatch() async throws -> [ShopWallpaper] {
+
+        if filters.wantsMixedRatios {
+
+            async let portrait = WallhavenAPI.fetchSingleRatio(
+                filters: filters,
+                ratio: "9x16",
+                page: portraitPage
+            )
+
+            async let landscape = WallhavenAPI.fetchSingleRatio(
+                filters: filters,
+                ratio: "16x9",
+                page: landscapePage
+            )
+
+            let (p, l) = try await (portrait, landscape)
+
+            if !p.isEmpty { portraitPage += 1 }
+            if !l.isEmpty { landscapePage += 1 }
+
+            // 🔑 Portrait-priority merge
+            return interleavePortraitPriority(p, l)
+
+        } else {
+
+            let ratio = filters.aspectRatios.first == .portrait
+                ? "9x16"
+                : "16x9"
+
+            let result = try await WallhavenAPI.fetchSingleRatio(
+                filters: filters,
+                ratio: ratio,
+                page: page
+            )
+
+            page += 1
+            return result
+        }
+    }
+    
+    private func interleavePortraitPriority(
+        _ portrait: [ShopWallpaper],
+        _ landscape: [ShopWallpaper]
+    ) -> [ShopWallpaper] {
+
+        var result: [ShopWallpaper] = []
+        var p = portrait
+        var l = landscape
+
+        while !p.isEmpty || !l.isEmpty {
+            if !p.isEmpty {
+                result.append(p.removeFirst())
+            }
+            if !l.isEmpty {
+                result.append(l.removeFirst())
+            }
+        }
+        return result
+    }
+    
     private func applyRatioPriority(
         _ items: [ShopWallpaper]
     ) -> [ShopWallpaper] {

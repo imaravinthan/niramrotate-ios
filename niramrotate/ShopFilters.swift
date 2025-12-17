@@ -69,4 +69,7 @@ extension ShopFilters {
     var wantsMixedRatios: Bool {
         aspectRatios.contains(.portrait) && aspectRatios.contains(.landscape)
     }
+    var primaryRatio: AspectRatio {
+        aspectRatios.contains(.portrait) ? .portrait : .landscape
+    }
 }

@@ -35,12 +35,6 @@ struct ShopPostRow: View {
                 Text("\(wallpaper.width)x\(wallpaper.height)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
-//                if wallpaper.purity.contains("nsfw") {
-//                    Text("NSFW")
-//                        .font(.caption2)
-//                        .foregroundColor(.red)
-//                }
                 if wallpaper.isNSFW {
                     Text("NSFW")
                         .font(.caption2.bold())

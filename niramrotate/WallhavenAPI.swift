@@ -57,29 +57,20 @@ enum WallhavenAPI {
 //        }
     }
     
-    private static func fetchSingleRatio(
+    static func fetchSingleRatio(
         filters: ShopFilters,
         ratio: String?,
         page: Int
     ) async throws -> [ShopWallpaper] {
 
-        var components = URLComponents(string: baseURL)!
-        var items: [URLQueryItem] = []
-
-        if !filters.query.isEmpty {
-            items.append(.init(name: "q", value: filters.query))
-        }
-
-        items.append(.init(name: "sorting", value: filters.sorting.rawValue))
-        items.append(.init(name: "categories", value: filters.categoryMask()))
-        items.append(.init(name: "purity", value: filters.purityMask()))
+        var components = buildQuery(from: filters, page: page)
 
         if let ratio {
-            items.append(.init(name: "ratios", value: ratio))
+            components.queryItems?.removeAll { $0.name == "ratios" }
+            components.queryItems?.append(
+                URLQueryItem(name: "ratios", value: ratio)
+            )
         }
-
-        items.append(.init(name: "page", value: "\(page)"))
-        components.queryItems = items
 
         let (data, _) = try await URLSession.shared.data(from: components.url!)
         let response = try JSONDecoder().decode(Response.self, from: data)
@@ -92,11 +83,11 @@ enum WallhavenAPI {
                 fullURL: URL(string: $0.path)!,
                 width: Int(parts[0]) ?? 0,
                 height: Int(parts[1]) ?? 0,
-                purity: $0.purity
+                purity: $0.purity,
+                ratio: $0.ratio
             )
         }
     }
-
 
     static func buildQuery(
         from filters: ShopFilters,
@@ -174,6 +165,7 @@ private struct Item: Decodable {
     let resolution: String
     let purity: String
     let thumbs: Thumbs
+    let ratio: String
 
     struct Thumbs: Decodable {
         let small: String
