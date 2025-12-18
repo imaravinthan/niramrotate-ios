@@ -23,18 +23,13 @@ struct WallhavenKeyEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                SecureField("Wallhaven API Key", text: $key)
+                SecureField("API Key", text: $key)
             }
             .navigationTitle("Wallhaven API Key")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
                         onSave(key)
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
                         dismiss()
                     }
                 }

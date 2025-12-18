@@ -27,13 +27,20 @@ enum AppResetManager {
 ////        defaults.synchronize()
 //        // 4. Kill the App
 //        exit(0)
-        try ImageBundleStore.shared.clearAllBundles()
-            UserDefaults.standard.removePersistentDomain(
-                forName: Bundle.main.bundleIdentifier!
-            )
-            Task {
-                try? await WallhavenKeyStore.delete()
-                await WallhavenKeyManager.shared.refresh()
+            // Clear bundles
+
+            // Clear bundles
+            try ImageBundleStore.shared.clearAllBundles()
+
+            // Clear UserDefaults
+            if let domain = Bundle.main.bundleIdentifier {
+                UserDefaults.standard.removePersistentDomain(forName: domain)
             }
+
+            // Clear API Key
+            try? WallhavenKeyManager.shared.deleteKey()
+
+            // Kill app state
+            exit(0)
     }
 }

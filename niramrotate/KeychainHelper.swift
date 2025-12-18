@@ -80,4 +80,14 @@ enum KeychainHelper {
 
         SecItemDelete(query as CFDictionary)
     }
+    
+    static func exists(
+        service: String,
+        account: String)  {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: account
+            ]
+    }
 }

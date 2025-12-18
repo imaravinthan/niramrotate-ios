@@ -8,15 +8,26 @@
 import SwiftUI
 import Combine
 
+enum DangerAction {
+    case clearBundles
+    case resetApp
+}
+
 struct ProfileView: View {
 
     @State private var showClearBundlesConfirm = false
     @State private var showResetConfirm = false
     @State private var errorMessage: String?
     @StateObject private var shopPrefs = ShopPreferences.shared
+
     @StateObject private var keyManager = WallhavenKeyManager.shared
-    @State private var revealedKey: String?
     @State private var showKeyEditor = false
+    @State private var showReveal = false
+    @State private var revealedKey: String?
+    
+    @State private var showDangerSheet = false
+    @State private var selectedDangerAction: DangerAction?
+
 
     var body: some View {
         NavigationStack {
@@ -56,41 +67,75 @@ struct ProfileView: View {
                 
                 Section("Shop Content") {
 
-                    Button {
-                        Task {
-                            revealedKey = try? await WallhavenKeyStore.loadWithBiometrics()
-                            showKeyEditor = true
-                        }
-                    } label: {
+                    if keyManager.hasKey {
+
                         HStack {
                             Text("Wallhaven API Key")
                             Spacer()
-                            Text(revealedKey == nil ? "Not Set" : "••••••••")
+                            Text(keyManager.maskedKey ?? "")
                                 .foregroundStyle(.secondary)
+                        }
+
+                        Button("View") {
+                            Task {
+                                do {
+                                    revealedKey = try await keyManager.revealKey()
+                                    showReveal = true
+                                } catch {
+                                    errorMessage = error.localizedDescription
+                                }
+                            }
+                        }
+
+                        Button("Update") {
+                            showKeyEditor = true
+                        }
+
+                    } else {
+
+                        Button("Add Wallhaven API Key") {
+                            showKeyEditor = true
                         }
                     }
                 }
                 .sheet(isPresented: $showKeyEditor) {
-                    WallhavenKeyEditorView(existingKey: revealedKey) { newKey in
-                        do {
-                            try WallhavenKeyStore.save(newKey)
-                        } catch {
-                            print("❌ Failed to save API key:", error)
+                    WallhavenKeyEditorView(existingKey: revealedKey ) { newKey in
+                        Task {
+                            do {
+                                try await keyManager.saveKey(newKey)
+                            } catch {
+                                errorMessage = error.localizedDescription
+                            }
                         }
                     }
                 }
+                .sheet(isPresented: $showReveal) {
+                    if let revealedKey {
+                        Text(revealedKey)
+                            .font(.footnote.monospaced())
+                            .padding()
+                    }
+                }
+
                 
                 Section("Danger Zone") {
 
-                    Button("Clear All Bundles", role: .destructive) {
-                        showClearBundlesConfirm = true
+                    Button(role: .destructive) {
+                        selectedDangerAction = .clearBundles
+                        showDangerSheet = true
+                        HapticManager.notification(.warning)
+                    } label: {
+                        Text("Clear All Bundles")
                     }
 
-                    Button("Reset App", role: .destructive) {
-                        showResetConfirm = true
+                    Button(role: .destructive) {
+                        selectedDangerAction = .resetApp
+                        showDangerSheet = true
+                        HapticManager.notification(.warning)
+                    } label: {
+                        Text("Reset App")
                     }
                 }
-                
 
                 if let errorMessage {
                     Section {
@@ -100,30 +145,22 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profile")
-            .confirmationDialog(
-                "This will permanently delete all bundles.",
-                isPresented: $showClearBundlesConfirm
-            ) {
-                Button("Delete All Bundles", role: .destructive) {
-                    clearBundles()
+            .overlay(alignment: .bottom) {
+                if showDangerSheet, let action = selectedDangerAction {
+                    DangerActionSheet(
+                        action: action,
+                        onConfirm: {
+                            showDangerSheet = false
+                            executeDangerAction(action)
+                        },
+                        onCancel: {
+                            showDangerSheet = false
+                        }
+                    )
+                    .transition(.move(edge: .bottom))
                 }
             }
-
-            .confirmationDialog(
-                "This will reset the entire app.",
-                isPresented: $showResetConfirm
-            ) {
-                Button("Reset App", role: .destructive) {
-                    resetApp()
-                }
-            }
-//            .sheet(isPresented: $showKeyEditor) {
-//                WallhavenKeyEditorView(existingKey: revealedKey) { newKey in
-//                    Task {
-//                        try? await WallhavenKeyManager.shared.save(newKey)
-//                    }
-//                }
-//            }
+            .animation(.easeOut, value: showDangerSheet)
         }
     }
 
@@ -144,5 +181,20 @@ struct ProfileView: View {
             errorMessage = error.localizedDescription
         }
     }
+    
+    private func executeDangerAction(_ action: DangerAction) {
+        if AppSettings.shared.hapticsEnabled {
+            HapticManager.notification(.error)
+        }
+
+        switch action {
+        case .clearBundles:
+            clearBundles()
+
+        case .resetApp:
+            resetApp()
+        }
+    }
+
 }
 

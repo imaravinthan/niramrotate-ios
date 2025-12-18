@@ -104,7 +104,7 @@ enum WallhavenAPI {
         var components = URLComponents(string: baseURL)!
         var items: [URLQueryItem] = []
         
-        if let key = try? await WallhavenKeyStore.loadWithBiometrics() {
+        if let key = try? await WallhavenKeyStore.loadSilently() {
             items.append(.init(name: "apikey", value: key))
         }
 
