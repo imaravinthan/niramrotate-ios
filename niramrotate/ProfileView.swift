@@ -13,21 +13,35 @@ enum DangerAction {
     case resetApp
 }
 
+enum ActiveKeySheet: Identifiable {
+    case add
+    case update
+    case reveal
+
+    var id: String {
+        switch self {
+        case .add: return "add"
+        case .update: return "update"
+        case .reveal: return "reveal"
+        }
+    }
+}
+
+
 struct ProfileView: View {
 
     @State private var showClearBundlesConfirm = false
     @State private var showResetConfirm = false
     @State private var errorMessage: String?
-    @StateObject private var shopPrefs = ShopPreferences.shared
-
-    @StateObject private var keyManager = WallhavenKeyManager.shared
-    @State private var showKeyEditor = false
-    @State private var showReveal = false
-    @State private var revealedKey: String?
     
     @State private var showDangerSheet = false
     @State private var selectedDangerAction: DangerAction?
-
+    
+    @State private var activeKeySheet: ActiveKeySheet?
+    @State private var revealedKey: String?
+    
+    @StateObject private var shopPrefs = ShopPreferences.shared
+    @StateObject private var keyManager = WallhavenKeyManager.shared
 
     var body: some View {
         NavigationStack {
@@ -77,45 +91,46 @@ struct ProfileView: View {
                         }
 
                         Button("View") {
-                            Task {
-                                do {
-                                    revealedKey = try await keyManager.revealKey()
-                                    showReveal = true
-                                } catch {
-                                    errorMessage = error.localizedDescription
-                                }
-                            }
+                            HapticManager.notification(.success)
+                            activeKeySheet = .reveal
                         }
 
                         Button("Update") {
-                            showKeyEditor = true
+                            HapticManager.impact(.medium)
+                            activeKeySheet = .update
                         }
 
                     } else {
 
                         Button("Add Wallhaven API Key") {
-                            showKeyEditor = true
+                            HapticManager.impact(.medium)
+                            activeKeySheet = .add
                         }
                     }
                 }
-                .sheet(isPresented: $showKeyEditor) {
-                    WallhavenKeyEditorView(existingKey: revealedKey ) { newKey in
-                        Task {
-                            do {
-                                try await keyManager.saveKey(newKey)
-                            } catch {
-                                errorMessage = error.localizedDescription
+                .sheet(item: $activeKeySheet) { sheet in
+                    switch sheet {
+
+                    case .add, .update:
+                        WallhavenKeyEditorView(existingKey: revealedKey) { newKey in
+                            Task {
+                                do {
+                                    try await keyManager.saveKey(newKey)
+                                    HapticManager.notification(.success)
+                                } catch {
+                                    errorMessage = error.localizedDescription
+                                    HapticManager.notification(.error)
+                                }
                             }
                         }
+
+                    case .reveal:
+                        WallhavenKeyRevealView(
+                            keyManager: keyManager
+                        )
                     }
                 }
-                .sheet(isPresented: $showReveal) {
-                    if let revealedKey {
-                        Text(revealedKey)
-                            .font(.footnote.monospaced())
-                            .padding()
-                    }
-                }
+
 
                 
                 Section("Danger Zone") {

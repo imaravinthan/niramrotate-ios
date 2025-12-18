@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+#Preview("Fullscreen – Portrait") {
+    ShopFullscreenView(
+        wallpaper: .previewPortrait
+    )
+}
+
 struct ShopFullscreenView: View {
 
     let wallpaper: ShopWallpaper
@@ -52,20 +58,31 @@ struct ShopFullscreenView: View {
                     }
 
                     Spacer()
+                    
+                    Button{
+                      dismiss()
+                    } label: {
+                        Image(systemName: "arrow.forward.folder.fill")
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(.black.opacity(0.5))
+                            .clipShape(Capsule())
+                    }
                 }
                 .padding()
 
                 Spacer()
             }
 
-            VStack {
-                Spacer()
-                Text("\(wallpaper.width)x\(wallpaper.height)")
-                    .font(.caption)
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(.black.opacity(0.6))
-            }
+//            VStack {
+//                
+//                Spacer()
+////                Text("\(wallpaper.width)x\(wallpaper.height)")
+////                    .font(.caption)
+////                    .foregroundColor(.white)
+////                    .padding()
+////                    .background(.black.opacity(0.6))
+//            }
         }
         .statusBarHidden(true)
         .toolbar(.hidden, for: .tabBar)

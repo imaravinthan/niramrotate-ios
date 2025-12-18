@@ -38,7 +38,11 @@ enum AppResetManager {
             }
 
             // Clear API Key
-            try? WallhavenKeyManager.shared.deleteKey()
+//            try? WallhavenKeyManager.shared.deleteKey()
+            try WallhavenKeyManager.shared.clear()
+                UserDefaults.standard.removePersistentDomain(
+                    forName: Bundle.main.bundleIdentifier!
+                )
 
             // Kill app state
             exit(0)

@@ -103,6 +103,10 @@ final class ShopViewModel: ObservableObject {
         prefs.markSeen(wallpaper.id)
     }
     
+    func saveToBundle(wallpaper: ShopWallpaper){
+        
+    }
+    
     private func fetchNextBatch() async throws -> [ShopWallpaper] {
 
         if filters.wantsMixedRatios {
@@ -236,5 +240,6 @@ final class ShopViewModel: ObservableObject {
 
         return existing + result
     }
-
+    
+    
 }

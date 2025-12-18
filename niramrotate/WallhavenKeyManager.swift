@@ -11,44 +11,46 @@ import Combine
 @MainActor
 final class WallhavenKeyManager: ObservableObject {
 
-    static let shared = WallhavenKeyManager()
-
     @Published private(set) var hasKey: Bool = false
-    @Published private(set) var maskedKey: String?
+    private var cachedKey: String?
+    static let shared = WallhavenKeyManager()
+    init() {
+        Task { await loadSilently() }
+    }
 
-    private let keychainKey = "wallhaven_api_key"
+    func loadSilently() async {
+        cachedKey = try? KeychainHelper.load(
+            service: "wallhaven_api",
+            account: "default"
+        )
+        hasKey = cachedKey != nil
+    }
 
-    private init() {
-        // ❌ NO BIOMETRICS HERE
-        // silent check only
-        if let key = try? KeychainHelper.load(service: keychainKey, account: "default") {
-            hasKey = true
-            maskedKey = mask(key)
-        }
+    var maskedKey: String? {
+        guard let key = cachedKey else { return nil }
+        return String(repeating: "•", count: max(0, key.count - 4)) + key.suffix(4)
     }
 
     func revealKey() async throws -> String {
         try await BiometricHelper.authenticate()
-        let key = try KeychainHelper.load(service: keychainKey, account: "default")
+        guard let key = cachedKey else { throw NSError() }
         return key
     }
 
-    func saveKey(_ key: String) async throws {
+    func saveKey(_ newKey: String) async throws {
         try await BiometricHelper.authenticate()
-        try KeychainHelper.save(key, service: keychainKey, account: "default")
+        try KeychainHelper.save(
+            newKey,
+            service: "wallhaven_api",
+            account: "default"
+        )
+        cachedKey = newKey
         hasKey = true
-        maskedKey = mask(key)
     }
 
-    func deleteKey() throws {
-        try KeychainHelper.delete(service: keychainKey, account: "default")
+    func clear() {
+        KeychainHelper.delete(service: "wallhaven_api", account: "default")
+        cachedKey = nil
         hasKey = false
-        maskedKey = nil
-    }
-
-    private func mask(_ key: String) -> String {
-        let prefix = key.prefix(4)
-        let suffix = key.suffix(2)
-        return "\(prefix)••••••\(suffix)"
     }
 }

@@ -7,60 +7,119 @@
 
 import SwiftUI
 
+#Preview("Shop view"){
+    ShopPostView(
+        wallpaper: .previewNSFW,
+        onOptionsTap: { _ in
+               // no-op for preview
+        }
+    )
+}
+
 enum ShopPostAction {
     case download
     case share
     case fullscreen
     case details
-//    case menu
 }
 
 struct ShopPostView: View {
-    @State private var showOptions = false
     let wallpaper: ShopWallpaper
-//    let onAction: (ShopPostAction) -> Void
     let onOptionsTap: (ShopWallpaper) -> Void
+    private var calculatedHeight: CGFloat {
+        let screenWidth = UIScreen.main.bounds.width - 32 // padding
+        let aspectRatio = CGFloat(wallpaper.height) / CGFloat(wallpaper.width)
+        return screenWidth * aspectRatio
+    }
+    private var cardHeight: CGFloat {
+        let screenWidth = UIScreen.main.bounds.width - 32 // padding
+        let aspect = CGFloat(wallpaper.height) / CGFloat(wallpaper.width)
+
+        // Clamp extreme ratios (VERY IMPORTANT)
+        let clampedAspect = min(max(aspect, 0.7), 1.8)
+
+        return screenWidth * clampedAspect
+    }
 
     var body: some View {
+//        VStack(spacing: 0) {
+
         ZStack(alignment: .topTrailing) {
-            
-            AsyncImage(url: wallpaper.previewURL) { phase in
+
+            imageContainer
+
+            optionsButton
+            nsfwBadge
+        }
+//        }
+        .background(Color.black)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal)
+    }
+    
+    private var imageContainer: some View {
+        GeometryReader { geo in
+            AsyncImage(url: wallpaper.fullURL) { phase in
                 switch phase {
                 case .success(let image):
                     image
                         .resizable()
                         .scaledToFill()
-                        .frame(maxWidth: .infinity)
+                        .scaleEffect(1.08) // 🔑 slight zoom (kills black bars)
+                        .frame(
+                            width: geo.size.width,
+                            height: geo.size.height
+                        )
                         .clipped()
-                    
+
                 default:
-                    Rectangle()
-                        .fill(Color.black)
+                    Color.black
                         .overlay(ProgressView())
                 }
             }
-            
-            Button {
-                onOptionsTap(wallpaper)
-            } label: {
-                Image(systemName: "ellipsis.circle.fill")
-                    .font(.title2)
-                    .padding()
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
+        }
+        .frame(height: cardHeight)
+    }
+
+    
+    private var optionsButton: some View {
+        VStack {
+            HStack {
+                Spacer()
+                Button {
+                    onOptionsTap(wallpaper)
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.title2)
+                        .padding(8)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                }
             }
-            .padding()
-            
+            Spacer()
+        }
+        .padding()
+    }
+
+    private var nsfwBadge: some View {
+        Group {
             if wallpaper.isNSFW {
-                Text("NSFW")
-                    .font(.caption2.bold())
-                    .foregroundColor(.red)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(.black.opacity(0.7))
-                    .clipShape(Capsule())
-                    .padding(8)
+                VStack {
+                    HStack {
+                        Text("NSFW")
+                            .font(.caption2.bold())
+                            .foregroundColor(.red)
+                            .padding(6)
+                            .background(.black.opacity(0.7))
+                            .clipShape(Capsule())
+                        Spacer()
+                    }
+                    Spacer()
+                }
+                .padding(8)
             }
         }
     }
+
+
 }
