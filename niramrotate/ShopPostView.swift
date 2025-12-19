@@ -7,14 +7,14 @@
 
 import SwiftUI
 
-#Preview("Shop view"){
-    ShopPostView(
-        wallpaper: .previewNSFW,
-        onOptionsTap: { _ in
-               // no-op for preview
-        }
-    )
-}
+//#Preview("Shop view"){
+//    ShopPostView(
+//        wallpaper: .previewLandscape,
+//        onOptionsTap: { _ in
+//               // no-op for preview
+//        }
+//    )
+//}
 
 enum ShopPostAction {
     case download
@@ -40,6 +40,14 @@ struct ShopPostView: View {
 
         return screenWidth * clampedAspect
     }
+    private var imageContainer: some View {
+        ProgressiveImageView(
+            previewURL: wallpaper.previewURL,
+            fullURL: wallpaper.fullURL,
+            wallpaper: wallpaper,
+            height: cardHeight
+        )
+    }
 
     var body: some View {
 //        VStack(spacing: 0) {
@@ -57,29 +65,29 @@ struct ShopPostView: View {
         .padding(.horizontal)
     }
     
-    private var imageContainer: some View {
-        GeometryReader { geo in
-            AsyncImage(url: wallpaper.fullURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .scaleEffect(1.08) // 🔑 slight zoom (kills black bars)
-                        .frame(
-                            width: geo.size.width,
-                            height: geo.size.height
-                        )
-                        .clipped()
-
-                default:
-                    Color.black
-                        .overlay(ProgressView())
-                }
-            }
-        }
-        .frame(height: cardHeight)
-    }
+//    private var imageContainer: some View {
+//        GeometryReader { geo in
+//            AsyncImage(url: wallpaper.fullURL) { phase in
+//                switch phase {
+//                case .success(let image):
+//                    image
+//                        .resizable()
+//                        .scaledToFill()
+//                        .scaleEffect(1.08) // 🔑 slight zoom (kills black bars)
+//                        .frame(
+//                            width: geo.size.width,
+//                            height: geo.size.height
+//                        )
+//                        .clipped()
+//
+//                default:
+//                    Color.black
+//                        .overlay(ProgressView())
+//                }
+//            }
+//        }
+//        .frame(height: cardHeight)
+//    }
 
     
     private var optionsButton: some View {

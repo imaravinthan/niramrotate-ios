@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-#Preview{
-    ShopView()
-}
+//#Preview{
+//    ShopView()
+//}
 
 struct ShopView: View {
 
@@ -77,7 +77,8 @@ struct ShopView: View {
                         )
                     }
                 }
-                .frame(maxWidth: .infinity) //, maxHeight: .infinity)
+//                .frame(maxWidth: .infinity) //, maxHeight: .infinity)
+//                .padding(.horizontal)
             }
             .navigationTitle("Shop")
             .navigationBarTitleDisplayMode(.large)

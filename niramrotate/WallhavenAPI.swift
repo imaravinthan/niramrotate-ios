@@ -74,7 +74,7 @@ enum WallhavenAPI {
 
         let (data, _) = try await URLSession.shared.data(from: components.url!)
         let response = try JSONDecoder().decode(Response.self, from: data)
-
+        print("Response: ",response)
         return response.data.map {
             let parts = $0.resolution.split(separator: "x")
             return ShopWallpaper(
@@ -104,9 +104,9 @@ enum WallhavenAPI {
         var components = URLComponents(string: baseURL)!
         var items: [URLQueryItem] = []
         
-        if let key = try? await WallhavenKeyStore.loadSilently() {
-            items.append(.init(name: "apikey", value: key))
-        }
+//        if let key = try? await WallhavenKeyStore.loadSilently() {
+//            items.append(.init(name: "apikey", value: key))
+//        }
 
         // Search
         if !filters.query.trimmingCharacters(in: .whitespaces).isEmpty {

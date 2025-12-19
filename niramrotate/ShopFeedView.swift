@@ -7,24 +7,24 @@
 
 import SwiftUI
 
-#Preview("Shop Feed – Static") {
-    ShopFeedView(
-        wallpapers: [
-            .previewPortrait,
-            .previewLandscape,
-            .previewNSFW
-        ],
-        onReachBottom: {
-            // no-op for preview
-        },
-        onOptionsTap: { _ in
-            // no-op for preview
-        },
-        resetAndReload: {
-            // no-op async for preview
-        }
-    )
-}
+//#Preview("Shop Feed – Static") {
+//    ShopFeedView(
+//        wallpapers: [
+//            .previewPortrait,
+//            .previewLandscape,
+//            .previewNSFW
+//        ],
+//        onReachBottom: {
+//            // no-op for preview
+//        },
+//        onOptionsTap: { _ in
+//            // no-op for preview
+//        },
+//        resetAndReload: {
+//            // no-op async for preview
+//        }
+//    )
+//}
 
 
 struct ShopFeedView: View {
