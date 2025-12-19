@@ -29,6 +29,9 @@ struct ShopWallpaper: Identifiable {
     let fileType: String
     let createdAt: String
     
+    // 🔑 OPTIONAL (filled only if API key exists)
+    var uploader: String? = nil
+    var tags: [ShopTag]? = nil
     // MARK: - Orientation helpers
 
     var isPortrait: Bool {

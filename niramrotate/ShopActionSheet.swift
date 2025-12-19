@@ -50,7 +50,7 @@ struct ShopActionSheet: View {
                     onSelect(.share)
                 }
                 divider
-                sheetButton("View Fullscreen") {
+                sheetButton("Show Original Size") {
                     HapticManager.impact(.medium)
                     onSelect(.fullscreen)
                 }

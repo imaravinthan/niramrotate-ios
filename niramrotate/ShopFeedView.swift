@@ -32,20 +32,26 @@ struct ShopFeedView: View {
     let wallpapers: [ShopWallpaper]
     let onReachBottom: () -> Void
     let onOptionsTap: (ShopWallpaper) -> Void
+    let onTagTap: (String) -> Void
     let resetAndReload: () async -> Void
 
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
                 ForEach(wallpapers) { wp in
-                    ShopPostView(wallpaper: wp) { action in
-                        onOptionsTap(wp)
-                    }
+                    ShopPostCardView(
+                        wallpaper: wp,
+                        onOptionsTap: onOptionsTap,
+                        onTagTap: onTagTap
+                    )
                 }
-                ProgressView()
-                    .onAppear {
-                        onReachBottom()
-                    }
+
+                if !wallpapers.isEmpty {
+                    ProgressView()
+                        .onAppear {
+                            onReachBottom()
+                        }
+                }
             }
             .padding(.vertical)
             .refreshable {
@@ -53,4 +59,4 @@ struct ShopFeedView: View {
             }
         }
     }
-}  
+}

@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-//#Preview{
-//    ShopView()
-//}
+#Preview{
+    ShopView()
+}
 
 struct ShopView: View {
 
@@ -70,6 +70,10 @@ struct ShopView: View {
                             onOptionsTap: { wp in
                                 selectedWallpaper = wp
                                 showActionSheet = true
+                            },
+                            onTagTap: { tag in
+                                    vm.filters.query = tag
+                                    Task { await vm.resetAndReload() }
                             },
                             resetAndReload: {
                                 Task { await vm.resetAndReload() }

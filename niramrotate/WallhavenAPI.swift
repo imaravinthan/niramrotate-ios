@@ -9,180 +9,124 @@ import Foundation
 
 enum WallhavenAPI {
 
-    static let baseURL = "https://wallhaven.cc/api/v1/search"
-    
-    static func fetch(
-        filters: ShopFilters,
-        page: Int
-    ) async throws -> [ShopWallpaper] {
-        if filters.wantsMixedRatios {
-            async let portrait = fetchSingleRatio(
-                filters: filters,
-                ratio: "9x16",
-                page: page
-            )
+    // MARK: - Endpoints
 
-            async let landscape = fetchSingleRatio(
-                filters: filters,
-                ratio: "16x9",
-                page: page
-            )
+    private static let searchURL = "https://wallhaven.cc/api/v1/search"
+    private static let detailURL = "https://wallhaven.cc/api/v1/w"
 
-            let (p, l) = try await (portrait, landscape)
-            return p + l
-        } else {
-            let ratio = filters.aspectRatios.first?.rawValue
-            return try await fetchSingleRatio(
-                filters: filters,
-                ratio: ratio,
-                page: page
-            )
-        }
+    // MARK: - Public Models
 
-//        let components = buildQuery(from: filters, page: page)
-//
-//        let (data, _) = try await URLSession.shared.data(from: components.url!)
-//        let response = try JSONDecoder().decode(Response.self, from: data)
-//        
-//        return response.data.map {
-//            let parts = $0.resolution.split(separator: "x")
-//            return ShopWallpaper(
-//                id: $0.id,
-//                previewURL: URL(string: $0.thumbs.small)!,
-//                fullURL: URL(string: $0.path)!,
-//                width: Int(parts.first ?? "0") ?? 0,
-//                height: Int(parts.last ?? "0") ?? 0,
-//                purity: $0.purity
-//            )
-//        }
-    }
-    
-    static func fetchSingleRatio(
-        filters: ShopFilters,
-        ratio: String?,
-        page: Int
-    ) async throws -> [ShopWallpaper] {
-
-        var components = await buildQuery(from: filters, page: page)
-
-        if let ratio {
-            components.queryItems?.removeAll { $0.name == "ratios" }
-            components.queryItems?.append(
-                URLQueryItem(name: "ratios", value: ratio)
-            )
-        }
-
-        let (data, _) = try await URLSession.shared.data(from: components.url!)
-        let response = try JSONDecoder().decode(Response.self, from: data)
-        print("Response: ",response)
-        return response.data.map {
-            let parts = $0.resolution.split(separator: "x")
-            return ShopWallpaper(
-                id: $0.id,
-                previewURL: URL(string: $0.thumbs.small)!,
-                fullURL: URL(string: $0.path)!,
-                webURL:  URL(string: $0.url)!,
-                views: $0.views,
-                favorites: $0.favorites,
-                purity: $0.purity,
-                category: $0.category,
-                width: Int(parts[0]) ?? 0,
-                height: Int(parts[1]) ?? 0,
-                ratio: $0.ratio,
-                fileSize: $0.file_size,
-                fileType: $0.file_type,
-                createdAt: $0.created_at
-            )
-        }
+    struct PageResult {
+        let items: [ShopWallpaper]
+        let currentPage: Int
+        let lastPage: Int
     }
 
-    static func buildQuery(
-        from filters: ShopFilters,
-        page: Int
-    ) async -> URLComponents {
+    // MARK: - SEARCH (ALWAYS USED)
 
-        var components = URLComponents(string: baseURL)!
+    static func search(
+        filters: ShopFilters,
+        page: Int
+    ) async throws -> PageResult {
+
+        var components = URLComponents(string: searchURL)!
         var items: [URLQueryItem] = []
-        
-//        if let key = try? await WallhavenKeyStore.loadSilently() {
-//            items.append(.init(name: "apikey", value: key))
-//        }
 
-        // Search
-        if !filters.query.trimmingCharacters(in: .whitespaces).isEmpty {
+        // Search query
+        if !filters.query.isEmpty {
             items.append(.init(name: "q", value: filters.query))
             items.append(.init(name: "sorting", value: "relevance"))
         } else {
             items.append(.init(name: "sorting", value: filters.sorting.rawValue))
         }
 
-        // Categories
-        items.append(.init(
-            name: "categories",
-            value: filters.categoryMask()
-        ))
+        // Categories & purity
+        items.append(.init(name: "categories", value: filters.categoryMask()))
+        items.append(.init(name: "purity", value: filters.purityMask()))
 
-        // Purity
-        items.append(.init(
-            name: "purity",
-            value: filters.purityMask()
-        ))
-        
         // Ratios
-//        if !filters.aspectRatios.isEmpty {
-//            items.append(.init(
-//                name: "ratios",
-//                value: filters.aspectRatios.map { $0.rawValue }.joined(separator: ",")
-//            ))
-//        }
         if !filters.aspectRatios.isEmpty {
-            let ratios = filters.aspectRatios
-                    .map { $0.rawValue }
-                    .joined(separator: ",")
-            print("Ratios: ", ratios)
             items.append(
-                URLQueryItem(
+                .init(
                     name: "ratios",
-                    value: ratios
+                    value: filters.aspectRatios.map(\.rawValue).joined(separator: ",")
                 )
             )
         }
 
-
         items.append(.init(name: "page", value: "\(page)"))
-
         components.queryItems = items
 
-        if let url = components.url {
-            let request = URLRequest(url: url)
-//            print("RAW REQUEST URL:", request.url?.absoluteString ?? "nil")
-//            print("PERCENT ENCODED URL:", components.percentEncodedQuery ?? "")
-        }
+        let (data, _) = try await URLSession.shared.data(from: components.url!)
+        let response = try JSONDecoder().decode(SearchResponse.self, from: data)
 
-        print("🔍 WALLHAVEN QUERY:", components.url?.absoluteString ?? "nil")
-        return components
+        let wallpapers = response.data.map { $0.toWallpaper() }
+
+        return PageResult(
+            items: wallpapers,
+            currentPage: response.meta.current_page,
+            lastPage: response.meta.last_page
+        )
     }
+
+    // MARK: - DETAILS (API KEY REQUIRED)
+
+    static func fetchDetails(
+        id: String,
+        apiKey: String
+    ) async throws -> ShopWallpaperDetails {
+
+        let url = URL(string: "\(detailURL)/\(id)?apikey=\(apiKey)")!
+        let (data, _) = try await URLSession.shared.data(from: url)
+
+        let response = try JSONDecoder().decode(DetailResponse.self, from: data)
+        return response.data.toDetails()
+    }
+
 }
 
-// MARK: - Response Models
-
-private struct Response: Decodable {
-    let data: [Item]
+private struct SearchResponse: Decodable {
+    let data: [SearchItem]
+    let meta: Meta
 }
 
-private struct Item: Decodable {
+private struct Meta: Decodable {
+    let current_page: Int
+    let last_page: Int
+    let total: Int
+    let per_page: Int
+}
+
+struct ShopTag: Identifiable, Hashable {
+
+    let id: Int
+    let name: String
+    let category: String
+    let purity: String
+}
+struct ShopWallpaperDetails: Identifiable {
+
+    let id: String
+
+    // MARK: - Uploader
+    let uploaderName: String
+    let uploaderAvatarURL: URL?
+
+    // MARK: - Meta
+    let tags: [ShopTag]
+    let source: String?
+}
+
+private struct SearchItem: Decodable {
     let id: String
     let path: String
+    let thumbs: Thumbs
     let resolution: String
     let purity: String
-    let thumbs: Thumbs
+    let category: String
     let ratio: String
-    
     let views: Int
     let favorites: Int
-    let category: String
-    let dimension_x: Int
-    let dimension_y: Int
     let file_size: Int
     let file_type: String
     let created_at: String
@@ -190,5 +134,70 @@ private struct Item: Decodable {
 
     struct Thumbs: Decodable {
         let small: String
+    }
+
+    func toWallpaper() -> ShopWallpaper {
+        let parts = resolution.split(separator: "x")
+        return ShopWallpaper(
+            id: id,
+            previewURL: URL(string: thumbs.small)!,
+            fullURL: URL(string: path)!,
+            webURL: URL(string: url)!,
+            views: views,
+            favorites: favorites,
+            purity: purity,
+            category: category,
+            width: Int(parts[0]) ?? 0,
+            height: Int(parts[1]) ?? 0,
+            ratio: ratio,
+            fileSize: file_size,
+            fileType: file_type,
+            createdAt: created_at
+        )
+    }
+}
+
+private struct DetailResponse: Decodable {
+    let data: DetailItem
+}
+
+private struct DetailItem: Decodable {
+
+    let id: String
+    let source: String
+    let uploader: Uploader
+    let tags: [Tag]
+
+    struct Uploader: Decodable {
+        let username: String
+        let avatar: Avatar?
+    }
+
+    struct Avatar: Decodable {
+        let small: String?
+    }
+
+    struct Tag: Decodable {
+        let id: Int
+        let name: String
+        let category: String
+        let purity: String
+    }
+
+    func toDetails() -> ShopWallpaperDetails {
+        ShopWallpaperDetails(
+            id: id,
+            uploaderName: uploader.username,
+            uploaderAvatarURL: uploader.avatar?.small.flatMap(URL.init),
+            tags: tags.map {
+                ShopTag(
+                    id: $0.id,
+                    name: $0.name,
+                    category: $0.category,
+                    purity: $0.purity
+                )
+            },
+            source: source.isEmpty ? nil : source
+        )
     }
 }
