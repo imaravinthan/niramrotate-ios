@@ -43,7 +43,7 @@ enum AppResetManager {
                 UserDefaults.standard.removePersistentDomain(
                     forName: Bundle.main.bundleIdentifier!
                 )
-
+//            try WallhavenKeyStore.delete()
             // Kill app state
             exit(0)
     }

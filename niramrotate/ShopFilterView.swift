@@ -34,14 +34,22 @@ struct ShopFilterView: View {
                 }
 
                 Section("Content") {
-                    Toggle(
-                        "Allow NSFW (Sketchy)",
-                        isOn: Binding(
-                            get: { filters.purity == .nsfw },
-                            set: { filters.purity = $0 ? .nsfw : .sfw }
-                        )
-                    )
+                    ForEach(availablePurityOptions, id: \.self) { mode in
+                        HStack {
+                            Text(mode.title)
+                            Spacer()
+                            if filters.purity == mode {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(.blue)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            filters.purity = mode
+                        }
+                    }
                 }
+
 
                 Section("Aspect Ratio") {
                     ForEach(ShopFilters.AspectRatio.allCases, id: \.self) { ratio in
@@ -101,6 +109,13 @@ struct ShopFilterView: View {
         )
     }
 
+    private var availablePurityOptions: [ShopFilters.PurityMode] {
+        if ShopPreferences.shared.hasWallhavenKey {
+            return ShopFilters.PurityMode.allCases
+        } else {
+            return [.sfw, .sketchy]
+        }
+    }
 
     private func label(for category: ShopFilters.Category) -> String {
         switch category {

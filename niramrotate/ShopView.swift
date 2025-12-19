@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-#Preview{
-    ShopView()
-}
+//#Preview{
+//    ShopView()
+//}
 
 struct ShopView: View {
 
@@ -24,6 +24,7 @@ struct ShopView: View {
     
     @State private var showActionSheet = false
     @State private var selectedWallpaper: ShopWallpaper?
+    @State private var downloadStatus: DownloadStatus = .idle
     
     var body: some View {
         NavigationStack {
@@ -64,6 +65,7 @@ struct ShopView: View {
                     } else {
                         ShopFeedView(
                             wallpapers: vm.wallpapers,
+                            hasMorePages: vm.hasMorePages,
                             onReachBottom: {
                                 Task { await vm.loadNext() }
                             },
@@ -72,19 +74,18 @@ struct ShopView: View {
                                 showActionSheet = true
                             },
                             onTagTap: { tag in
-                                    vm.filters.query = tag
-                                    Task { await vm.resetAndReload() }
+                                vm.filters.query = tag
+                                Task { await vm.resetAndReload() }
                             },
                             resetAndReload: {
                                 Task { await vm.resetAndReload() }
                             }
                         )
+
                     }
                 }
-//                .frame(maxWidth: .infinity) //, maxHeight: .infinity)
-//                .padding(.horizontal)
             }
-            .navigationTitle("Shop")
+            .navigationTitle("Discover")
             .navigationBarTitleDisplayMode(.large)
         }
         .task {
@@ -97,13 +98,24 @@ struct ShopView: View {
         }
         .fullScreenCover(isPresented: $showFullscreen) {
             if let wp = fullscreenWallpaper {
-                ShopFullscreenView(wallpaper: wp)
+                if ShopPreferences.shared.hasWallhavenKey {
+                    ShopFullDetailsView(
+                        wallpaper: wp,
+                        onTagSelected: { tag in
+                            vm.filters.query = tag
+                            Task { await vm.resetAndReload() }
+                        }
+                    )
+                } else {
+                    ShopFullscreenView(wallpaper: wp)
+                }
             }
         }
         .overlay(alignment: .bottom) {
             if showActionSheet, let wp = selectedWallpaper {
                 ShopActionSheet(
                     wallpaper: wp,
+                    hasAPIKey: ShopPreferences.shared.hasWallhavenKey,
                     onSelect: { action in
                         showActionSheet = false
                         handleAction(action, wallpaper: wp)
@@ -134,20 +146,30 @@ struct ShopView: View {
         switch action {
 
         case .download:
-            ImageDownloader.saveToPhotos(url: wallpaper.fullURL)
+//            ImageDownloader.saveToPhotos(url: wallpaper.fullURL)
+            ImageSaveManager.save(imageURL:wallpaper.fullURL, status: { newStatus in
+                downloadStatus = newStatus
+            })
 
         case .share:
             ShareManager.share(url: wallpaper.fullURL)
 
-        case .fullscreen:
-            fullscreenWallpaper = wallpaper
-            showFullscreen = true
+        case .showOriginal:
+//            fullscreenWallpaper = wallpaper
+//            showFullscreen = true
+            if ShopPreferences.shared.hasWallhavenKey {
+                // 🔑 API key → rich view
+                fullscreenWallpaper = wallpaper
+                showFullscreen = true   // opens ShopFullDetailsView
+            } else {
+                // 🚫 No key → image-only fullscreen
+                fullscreenWallpaper = wallpaper
+                showFullscreen = true   // opens ShopFullscreenView
+            }
 
         case .details:
             detailsWallpaper = wallpaper
             showDetails = true
         }
     }
-
-
 }

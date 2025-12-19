@@ -10,21 +10,18 @@ import SwiftUI
 struct MainTabView: View {
     var body: some View {
         TabView {
-            LibraryView()
-                .tabItem {
-                    Label("Library", systemImage: "photo.on.rectangle")
-                }
-            
             ShopView()
                 .tabItem {
-                    Label("Shop", systemImage: "sparkles")
+                    Label("Discover", systemImage: "sparkles")
                 }
-                
             CreateBundleView()
                 .tabItem {
                     Label("Create", systemImage: "plus.circle")
                 }
-
+            LibraryView()
+                .tabItem {
+                    Label("Library", systemImage: "photo.on.rectangle")
+                }
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.crop.circle")

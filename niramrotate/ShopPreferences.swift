@@ -11,21 +11,23 @@ import Combine
 final class ShopPreferences: ObservableObject {
 
     static let shared = ShopPreferences()
-    
-    @Published private(set) var hasKey = false
-        @Published var revealedKey: String?
+
+    @Published private(set) var hasWallhavenKey = false
+//    @Published var revealedKey: String?
+    private var cancellable: AnyCancellable?
 
     private init() {
-//        Task { await loadKeyPresence() }
+        let manager = WallhavenKeyManager.shared
+        hasWallhavenKey = manager.hasKey
+
+        cancellable = manager.$hasKey
+            .receive(on: RunLoop.main)
+            .assign(to: \.hasWallhavenKey, on: self)
     }
 
     private let historyKey = "shop_seen_ids"
-    
-//    func loadKeyPresence() async {
-//        let key = try? await WallhavenKeyStore.loadSilently()
-//            hasKey = (key != nil)
-//        }
 
+    // MARK: - Seen
 
     func hasSeen(_ id: String) -> Bool {
         let set = Set(UserDefaults.standard.stringArray(forKey: historyKey) ?? [])
@@ -41,5 +43,11 @@ final class ShopPreferences: ObservableObject {
     func clearHistory() {
         UserDefaults.standard.removeObject(forKey: historyKey)
     }
-}
+    
+    #if DEBUG
+    func _setHasWallhavenKeyForPreview(_ value: Bool) {
+        hasWallhavenKey = value
+    }
+    #endif
 
+}

@@ -30,10 +30,34 @@ struct ShopFilters {
     var categories: Set<Category> = [.general]
 
     // MARK: - Purity (STRICT)
-    enum PurityMode {
+    enum PurityMode: String, CaseIterable, Identifiable {
         case sfw
+        case sketchy
         case nsfw
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .sfw: return "Safe (SFW)"
+            case .sketchy: return "Sketchy"
+            case .nsfw: return "NSFW"
+            }
+        }
+        
+        /// Wallhaven mask
+        var apiMask: String {
+            switch self {
+            case .sfw:
+                return "100"
+            case .sketchy:
+                return "110"
+            case .nsfw:
+                return "111"
+            }
+        }
     }
+
     var purity: PurityMode = .sfw
 
     // MARK: - Aspect Ratios
@@ -56,13 +80,18 @@ struct ShopFilters {
         return g + a + p
     }
 
+//    func purityMask() -> String {
+//        switch purity {
+//        case .sfw:
+//            return "100"
+//        case .sketchy:
+//            return "110"
+//        case .nsfw:
+//            return "111"   // sfw + sketchy
+//        }
+//    }
     func purityMask() -> String {
-        switch purity {
-        case .sfw:
-            return "100"
-        case .nsfw:
-            return "110"   // sfw + sketchy
-        }
+        purity.apiMask
     }
 }
 extension ShopFilters {

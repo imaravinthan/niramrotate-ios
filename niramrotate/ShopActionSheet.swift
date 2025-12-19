@@ -10,6 +10,7 @@ import SwiftUI
 struct ShopActionSheet: View {
 
     let wallpaper: ShopWallpaper
+    let hasAPIKey: Bool
     let onSelect: (ShopPostAction) -> Void
     let onDismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
@@ -25,21 +26,6 @@ struct ShopActionSheet: View {
 
             // MARK: - Main actions
             VStack(spacing: 0) {
-//                sheetButton("Download") {
-//                    onSelect(.download)
-//                }
-//                divider
-//                sheetButton("Share") {
-//                    onSelect(.share)
-//                }
-//                divider
-//                sheetButton("View Fullscreen") {
-//                    onSelect(.fullscreen)
-//                }
-//                divider
-//                sheetButton("Details") {
-//                    onSelect(.details)
-//                }
                 sheetButton("Download") {
                     HapticManager.impact(.medium)
                     onSelect(.download)
@@ -50,9 +36,11 @@ struct ShopActionSheet: View {
                     onSelect(.share)
                 }
                 divider
-                sheetButton("Show Original Size") {
+                sheetButton(
+                    hasAPIKey ? "Show Original" : "Show Fullscreen"
+                ) {
                     HapticManager.impact(.medium)
-                    onSelect(.fullscreen)
+                    onSelect(.showOriginal)
                 }
                 divider
                 sheetButton("Details") {

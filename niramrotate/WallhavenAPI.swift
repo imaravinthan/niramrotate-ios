@@ -32,7 +32,7 @@ enum WallhavenAPI {
         var components = URLComponents(string: searchURL)!
         var items: [URLQueryItem] = []
 
-        // Search query
+        // 🔍 Search query
         if !filters.query.isEmpty {
             items.append(.init(name: "q", value: filters.query))
             items.append(.init(name: "sorting", value: "relevance"))
@@ -40,24 +40,40 @@ enum WallhavenAPI {
             items.append(.init(name: "sorting", value: filters.sorting.rawValue))
         }
 
-        // Categories & purity
+        // 📂 Categories & purity
         items.append(.init(name: "categories", value: filters.categoryMask()))
         items.append(.init(name: "purity", value: filters.purityMask()))
 
-        // Ratios
+        // 📐 Ratios
         if !filters.aspectRatios.isEmpty {
             items.append(
                 .init(
                     name: "ratios",
-                    value: filters.aspectRatios.map(\.rawValue).joined(separator: ",")
+                    value: filters.aspectRatios
+                        .map(\.rawValue)
+                        .joined(separator: ",")
                 )
             )
         }
 
+        // 📄 Pagination
         items.append(.init(name: "page", value: "\(page)"))
+
+        // 🔑 API KEY (OPTIONAL)
+        let apiKey = WallhavenKeyManager.shared.hasKey
+        if  apiKey{
+            items.append(.init(name: "apikey", value: WallhavenKeyManager.shared.getKeySilently()))
+        }
+
         components.queryItems = items
 
-        let (data, _) = try await URLSession.shared.data(from: components.url!)
+        guard let url = components.url else {
+            throw URLError(.badURL)
+        }
+
+        print("🔍 Wallhaven Query URL:", url.absoluteString)
+
+        let (data, _) = try await URLSession.shared.data(from: url)
         let response = try JSONDecoder().decode(SearchResponse.self, from: data)
 
         let wallpapers = response.data.map { $0.toWallpaper() }
@@ -69,6 +85,7 @@ enum WallhavenAPI {
         )
     }
 
+
     // MARK: - DETAILS (API KEY REQUIRED)
 
     static func fetchDetails(
@@ -78,8 +95,9 @@ enum WallhavenAPI {
 
         let url = URL(string: "\(detailURL)/\(id)?apikey=\(apiKey)")!
         let (data, _) = try await URLSession.shared.data(from: url)
-
+        print("Detail URL: ", url)
         let response = try JSONDecoder().decode(DetailResponse.self, from: data)
+        print("Detail response: ",response)
         return response.data.toDetails()
     }
 
@@ -95,6 +113,28 @@ private struct Meta: Decodable {
     let last_page: Int
     let total: Int
     let per_page: Int
+    
+    enum CodingKeys: String, CodingKey {
+            case current_page, last_page, total, per_page
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+
+            current_page = try container.decode(Int.self, forKey: .current_page)
+            last_page = try container.decode(Int.self, forKey: .last_page)
+            total = try container.decode(Int.self, forKey: .total)
+
+            // 🛡️ Defensive decode (Int OR String)
+            if let intValue = try? container.decode(Int.self, forKey: .per_page) {
+                per_page = intValue
+            } else if let stringValue = try? container.decode(String.self, forKey: .per_page),
+                      let intValue = Int(stringValue) {
+                per_page = intValue
+            } else {
+                per_page = 0
+            }
+        }
 }
 
 struct ShopTag: Identifiable, Hashable {

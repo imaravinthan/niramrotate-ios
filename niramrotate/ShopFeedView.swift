@@ -20,6 +20,9 @@ import SwiftUI
 //        onOptionsTap: { _ in
 //            // no-op for preview
 //        },
+//        onTagTap: { _ in
+//            // no-op for preview
+//        },
 //        resetAndReload: {
 //            // no-op async for preview
 //        }
@@ -30,6 +33,7 @@ import SwiftUI
 struct ShopFeedView: View {
 
     let wallpapers: [ShopWallpaper]
+    let hasMorePages: Bool
     let onReachBottom: () -> Void
     let onOptionsTap: (ShopWallpaper) -> Void
     let onTagTap: (String) -> Void
@@ -38,25 +42,36 @@ struct ShopFeedView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
+
                 ForEach(wallpapers) { wp in
                     ShopPostCardView(
                         wallpaper: wp,
-                        onOptionsTap: onOptionsTap,
-                        onTagTap: onTagTap
+                        onOptionsTap: onOptionsTap
                     )
                 }
 
-                if !wallpapers.isEmpty {
-                    ProgressView()
-                        .onAppear {
-                            onReachBottom()
-                        }
-                }
+                footer
             }
             .padding(.vertical)
             .refreshable {
                 await resetAndReload()
             }
+        }
+    }
+
+    @ViewBuilder
+    private var footer: some View {
+        if hasMorePages {
+            ProgressView()
+                .padding()
+                .onAppear {
+                    onReachBottom()
+                }
+        } else {
+            Text("— You’ve reached the end —")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.vertical, 24)
         }
     }
 }

@@ -60,12 +60,7 @@ extension ShopWallpaper {
         fileType: "image/jpeg",
         createdAt: "2025-01-01"
     )
-}
-#endif
-
-#if DEBUG
-extension ShopWallpaper {
-
+    
     static let previewAPIKEY = ShopWallpaper(
         id: "2y8316",
         previewURL: URL(string: "https://picsum.photos/401/801")!,

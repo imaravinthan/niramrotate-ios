@@ -11,19 +11,25 @@ import Combine
 @MainActor
 final class WallhavenKeyManager: ObservableObject {
 
+    static let shared = WallhavenKeyManager()
+
     @Published private(set) var hasKey: Bool = false
     private var cachedKey: String?
-    static let shared = WallhavenKeyManager()
-    init() {
+
+    private let service = "wallhaven_api_key"
+    private let account = "default"
+
+    private init() {
         Task { await loadSilently() }
     }
 
     func loadSilently() async {
         cachedKey = try? KeychainHelper.load(
-            service: "wallhaven_api",
-            account: "default"
+            service: service,
+            account: account
         )
         hasKey = cachedKey != nil
+        print("🔑 Key loaded:", cachedKey != nil)
     }
 
     var maskedKey: String? {
@@ -41,16 +47,21 @@ final class WallhavenKeyManager: ObservableObject {
         try await BiometricHelper.authenticate()
         try KeychainHelper.save(
             newKey,
-            service: "wallhaven_api",
-            account: "default"
+            service: service,
+            account: account
         )
         cachedKey = newKey
         hasKey = true
     }
 
     func clear() {
-        KeychainHelper.delete(service: "wallhaven_api", account: "default")
+        KeychainHelper.delete(service: service, account: account)
         cachedKey = nil
         hasKey = false
+    }
+
+    /// Internal use (API calls)
+    func getKeySilently() -> String? {
+        cachedKey
     }
 }

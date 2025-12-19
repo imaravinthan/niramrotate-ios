@@ -21,4 +21,7 @@ enum ImageDownloader {
             UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
         }
     }
+    
+    
 }
+

@@ -8,22 +8,38 @@
 
 import SwiftUI
 
-#Preview("Shop view"){
-    ShopPostCardView(
-        wallpaper: .previewAPIKEY,
-        onOptionsTap: { _ in
-               // no-op for preview
-        },
-        onTagTap: { _ in
-            // no-op for preview
-        }
-    ) 
-}
+//#Preview("Shop view"){
+//    ShopPostCardView(
+//        wallpaper: .previewAPIKEY,
+//        onOptionsTap: { _ in
+//               // no-op for preview
+//        },
+//        onTagTap: { _ in
+//            // no-op for preview
+//        }
+//    ) 
+//}
+
+//#Preview("Shop Card – API Key") {
+//    let prefs = ShopPreferences.shared
+//    prefs._setHasWallhavenKeyForPreview(true)
+//
+//    return
+//    ShopPostCardView(
+//        wallpaper: .previewAPIKEY,
+//        onOptionsTap: { _ in },
+//        onTagTap: { tag in
+//            print("Tapped tag:", tag)
+//        }
+//    )
+//} 
+
+
 
 enum ShopPostAction {
     case download
     case share
-    case fullscreen
+    case showOriginal
     case details
 }
 
@@ -31,9 +47,6 @@ struct ShopPostCardView: View {
 
     let wallpaper: ShopWallpaper
     let onOptionsTap: (ShopWallpaper) -> Void
-    let onTagTap: (String) -> Void
-
-    @StateObject private var prefs = ShopPreferences.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -42,24 +55,13 @@ struct ShopPostCardView: View {
             headerRow
             imageSection
             preFooter
-
-            if prefs.hasKey {
-                tagsFooter
-            }
         }
         .padding()
         .background(.background)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .padding(.horizontal)
     }
-    
-    private var cardHeight: CGFloat {
-        let screenWidth = UIScreen.main.bounds.width - 32
-        let aspect = CGFloat(wallpaper.height) / CGFloat(wallpaper.width)
-        let clamped = min(max(aspect, 0.7), 1.8)
-        return screenWidth * clamped
-    }
-    
+
     private var titleRow: some View {
         HStack {
             Text(wallpaper.id)
@@ -68,12 +70,6 @@ struct ShopPostCardView: View {
 
             Spacer()
 
-            if prefs.hasKey {
-                Text(wallpaper.uploader ?? "")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
             Button {
                 onOptionsTap(wallpaper)
             } label: {
@@ -81,7 +77,7 @@ struct ShopPostCardView: View {
             }
         }
     }
-    
+
     private var headerRow: some View {
         HStack(spacing: 6) {
             Image(systemName: categorySymbol)
@@ -100,7 +96,7 @@ struct ShopPostCardView: View {
         default: return "photo"
         }
     }
-    
+
     private var imageSection: some View {
         ZStack(alignment: .topLeading) {
 
@@ -123,7 +119,7 @@ struct ShopPostCardView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
-    
+
     private var preFooter: some View {
         HStack {
             Label("\(wallpaper.views)", systemImage: "eye")
@@ -133,24 +129,12 @@ struct ShopPostCardView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
     }
-    
-    private var tagsFooter: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack {
-                ForEach(wallpaper.tags ?? []) { tag in
-                    Button {
-                        onTagTap(tag.name)
-                    } label: {
-                        Text(tag.name)
-                            .font(.caption2)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(.secondary.opacity(0.15))
-                            .clipShape(Capsule())
-                    }
-                }
-            }
-        }
-    }
 
+    private var cardHeight: CGFloat {
+        let screenWidth = UIScreen.main.bounds.width - 32
+        let aspect = CGFloat(wallpaper.height) / CGFloat(wallpaper.width)
+        let clamped = min(max(aspect, 0.75), 1.8)
+        return screenWidth * clamped
+    }
 }
+

@@ -94,3 +94,39 @@ struct ShopFullscreenView: View {
         }
     }
 }
+
+struct ShopImageFullscreenView: View {
+    let imageURL: URL
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            Color.black.ignoresSafeArea()
+
+            AsyncImage(url: imageURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.black)
+                default:
+                    ProgressView().tint(.white)
+                }
+            }
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.down")
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(.black.opacity(0.5))
+                    .clipShape(Circle())
+                    .padding()
+            }
+        }
+        .statusBarHidden(true)
+    }
+}

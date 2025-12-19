@@ -17,7 +17,7 @@ final class ShopViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isEmptyResult = false
     @Published private(set) var hasMorePages = true
-
+    
     // MARK: - Private
 
     private var page = 1
