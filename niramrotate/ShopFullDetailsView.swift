@@ -5,7 +5,6 @@
 //  Created by aravinthan.selvaraj on 19/12/25.
 //
 
-import SwiftUI
 //
 //#Preview("Shop Feed – Static") {
 //        let prefs = ShopPreferences.shared
@@ -34,29 +33,35 @@ struct ShopFullDetailsView: View {
     @State private var tempDownloadURL: URL?
     @State private var showSavePicker = false
     @State private var showFullscreenImage = false
+    
+    @State private var reloadToken = UUID()
+
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
+        VStack(spacing: 0) {
 
-                headerBar
+            headerBar
 
-                fullImage
-                
-                statusView
+            ScrollView {
+                VStack(spacing: 16) {
 
-                metaSection
+                    fullImage
 
-                if isLoading {
-                    ProgressView("Loading details…")
+                    statusView
+
+                    metaSection
+
+                    if isLoading {
+                        ProgressView("Loading details…")
+                    }
+
+                    if let details {
+                        uploaderSection(details)
+                        tagsSection(details)
+                    }
                 }
-
-                if let details {
-                    uploaderSection(details)
-                    tagsSection(details)
-                }
+                .padding()
             }
-            .padding()
         }
         .onAppear {
             loadDetailsIfNeeded()
@@ -69,8 +74,8 @@ struct ShopFullDetailsView: View {
                 }
             }
         }
-
     }
+
 
     private func loadDetails() {
         Task {
@@ -174,8 +179,12 @@ struct ShopFullDetailsView: View {
     }
     
     private var fullImage: some View {
-        AsyncImage(url: wallpaper.fullURL) { phase in
+        AsyncImage(
+            url: wallpaper.fullURL,
+            transaction: Transaction(animation: .easeInOut)
+        ) { phase in
             switch phase {
+
             case .success(let image):
                 image
                     .resizable()
@@ -189,20 +198,46 @@ struct ShopFullDetailsView: View {
                     }
 
             case .failure:
-                Color.black
-                    .frame(height: 300)
-                    .overlay(Text("Failed to load").foregroundColor(.white))
+                failedView
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            reloadToken = UUID()
+                        }
+                    }
 
             default:
                 ProgressView()
                     .frame(height: 300)
             }
         }
+        // 🔑 THIS forces reload
+        .id(reloadToken)
         .fullScreenCover(isPresented: $showFullscreenImage) {
-                ShopImageFullscreenView(imageURL: wallpaper.fullURL)
-            }
+            ShopImageFullscreenView(imageURL: wallpaper.fullURL)
+        }
     }
-    
+
+    private var failedView: some View {
+        VStack(spacing: 12) {
+            Color.black
+                .overlay(
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.largeTitle)
+                        .foregroundColor(.yellow)
+                )
+                .frame(height: 300)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            Button {
+                HapticManager.impact(.medium)
+                reloadToken = UUID()   // 🔁 FORCE reload
+            } label: {
+                Label("Reload Image", systemImage: "arrow.clockwise")
+                    .font(.headline)
+            }
+        }
+    }
+
     private var imageActions: some View {
         Group {
             Button {
@@ -286,15 +321,35 @@ struct ShopFullDetailsView: View {
     }
     
     private func tagsSection(_ details: ShopWallpaperDetails) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+
             Text("Tags")
                 .font(.headline)
 
-            TagFlowLayout(tags: details.tags) { tag in
-                handleTagTap(tag)
+            LazyVGrid(
+                columns: [
+                    GridItem(.adaptive(minimum: 90), spacing: 8)
+                ],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                ForEach(details.tags) { tag in
+                    Button {
+                        handleTagTap(tag)
+                    } label: {
+                        Text(tag.name)
+                            .font(.caption)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(.secondary.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
     }
+
 
 }
 
@@ -361,6 +416,9 @@ struct TagFlowLayout: View {
                 Color.clear
                     .onAppear {
                         totalHeight = geo.size.height
+                    }
+                    .onChange(of: geo.size.height) { newValue in
+                        totalHeight = newValue
                     }
             }
         )
