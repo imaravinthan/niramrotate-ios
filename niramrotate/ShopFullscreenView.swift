@@ -20,12 +20,17 @@ struct ShopImageFullscreenView: View {
     @State private var showSavePicker = false
     @State private var reloadID = UUID()
 
+    @State private var scale: CGFloat = 1
+    @State private var lastScale: CGFloat = 1
+
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+
     var body: some View {
         ZStack {
 
             Color.black.ignoresSafeArea()
 
-            // 🔴 CRITICAL FIX: GeometryReader
             GeometryReader { geo in
                 AsyncImage(url: imageURL) { phase in
                     switch phase {
@@ -38,15 +43,80 @@ struct ShopImageFullscreenView: View {
                                 width: geo.size.width,
                                 height: geo.size.height
                             )
+                            .scaleEffect(scale)
+                            .offset(offset)
                             .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation {
-                                    showControls.toggle()
-                                }
-                            }
+
+                            // 🔹 PINCH TO ZOOM
+                            .gesture(
+                                MagnificationGesture()
+                                    .onChanged { value in
+                                        let newScale = lastScale * value
+                                        scale = min(max(newScale, 1), 4)
+                                    }
+                                    .onEnded { _ in
+                                        lastScale = scale
+                                        if scale == 1 {
+                                            offset = .zero
+                                            lastOffset = .zero
+                                        }
+                                    }
+                            )
+
+                            // 🔹 DOUBLE TAP TO ZOOM
+                            .highPriorityGesture(
+                                    TapGesture(count: 2)
+                                        .onEnded {
+                                            withAnimation(.spring()) {
+                                                if scale > 1 {
+                                                    scale = 1
+                                                    lastScale = 1
+                                                    offset = .zero
+                                                    lastOffset = .zero
+                                                } else {
+                                                    scale = 2.5
+                                                    lastScale = 2.5
+                                                }
+                                            }
+                                        }
+                                )
+                            // 🔹 SINGLE TAP → SHOW / HIDE CONTROLS
+                            .simultaneousGesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        guard scale > 1 else { return }
+
+                                        let newOffset = CGSize(
+                                            width: lastOffset.width + value.translation.width,
+                                            height: lastOffset.height + value.translation.height
+                                        )
+
+                                        offset = clampOffset(
+                                            newOffset,
+                                            in: geo.size,
+                                            scale: scale
+                                        )
+                                    }
+                                    .onEnded { _ in
+                                        lastOffset = offset
+                                    }
+                                )
+                        // 🔹 SINGLE TAP → SHOW / HIDE CONTROLS
+                            .simultaneousGesture(
+                                TapGesture(count: 1)
+                                    .onEnded {
+                                        withAnimation {
+                                            showControls.toggle()
+                                        }
+                                    }
+                            )
 
                     case .failure:
                         failedView
+                            .frame(
+                                width: geo.size.width,
+                                height: geo.size.height
+                            )
 
                     default:
                         ProgressView()
@@ -57,10 +127,10 @@ struct ShopImageFullscreenView: View {
                             )
                     }
                 }
-                .id(reloadID) // allows retry
+                .id(reloadID)
             }
 
-            // MARK: - Top Bar
+            // MARK: - TOP BAR
             if showControls {
                 VStack {
                     HStack {
@@ -84,7 +154,7 @@ struct ShopImageFullscreenView: View {
                 .transition(.opacity)
             }
 
-            // MARK: - Bottom Actions
+            // MARK: - BOTTOM CONTROLS
             if showControls {
                 VStack {
                     Spacer()
@@ -98,6 +168,7 @@ struct ShopImageFullscreenView: View {
                                 .padding(.vertical, 6)
                                 .background(.ultraThinMaterial)
                                 .clipShape(Capsule())
+                                .transition(.opacity)
                         }
 
                         HStack(spacing: 28) {
@@ -145,6 +216,7 @@ struct ShopImageFullscreenView: View {
         }
     }
 
+
     // MARK: - Helpers
 
     private var failedView: some View {
@@ -185,4 +257,20 @@ struct ShopImageFullscreenView: View {
             .background(.black.opacity(0.6))
             .clipShape(Circle())
     }
+    
+    private func clampOffset(
+        _ offset: CGSize,
+        in size: CGSize,
+        scale: CGFloat
+    ) -> CGSize {
+
+        let maxX = (size.width * (scale - 1)) / 2
+        let maxY = (size.height * (scale - 1)) / 2
+
+        return CGSize(
+            width: min(max(offset.width, -maxX), maxX),
+            height: min(max(offset.height, -maxY), maxY)
+        )
+    }
+ 
 }
