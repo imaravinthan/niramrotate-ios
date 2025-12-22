@@ -11,6 +11,21 @@ import SwiftUI
 //    ShopView()
 //}
 
+enum FullscreenDestination: Identifiable {
+    case image(URL)
+    case fullDetails(ShopWallpaper)
+
+    var id: String {
+        switch self {
+        case .image(let url):
+            return "image-\(url.absoluteString)"
+        case .fullDetails(let wp):
+            return "details-\(wp.id)"
+        }
+    }
+}
+
+
 struct ShopView: View {
 
     @StateObject private var vm = ShopViewModel()
@@ -18,14 +33,14 @@ struct ShopView: View {
     
     @State private var showDetails = false
     @State private var detailsWallpaper: ShopWallpaper?
-
-    @State private var showFullscreen = false
-    @State private var fullscreenWallpaper: ShopWallpaper?
     
     @State private var showActionSheet = false
     @State private var selectedWallpaper: ShopWallpaper?
     @State private var downloadStatus: DownloadStatus = .idle
     
+    @State private var fullscreenDestination: FullscreenDestination?
+    @State private var dismissTask: Task<Void, Never>?
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -73,6 +88,9 @@ struct ShopView: View {
                                 selectedWallpaper = wp
                                 showActionSheet = true
                             },
+                            onImageTap: { wp in
+                                fullscreenDestination = .image(wp.fullURL)
+                            },
                             onTagTap: { tag in
                                 vm.filters.query = tag
                                 Task { await vm.resetAndReload() }
@@ -81,7 +99,6 @@ struct ShopView: View {
                                 Task { await vm.resetAndReload() }
                             }
                         )
-
                     }
                 }
             }
@@ -96,38 +113,83 @@ struct ShopView: View {
                 ShopDetailsView(wallpaper: wp)
             }
         }
-        .fullScreenCover(isPresented: $showFullscreen) {
-            if let wp = fullscreenWallpaper {
-                if ShopPreferences.shared.hasWallhavenKey {
-                    ShopFullDetailsView(
-                        wallpaper: wp,
-                        onTagSelected: { tag in
-                            vm.filters.query = tag
-                            Task { await vm.resetAndReload() }
-                        }
-                    )
-                } else {
-                    ShopFullscreenView(wallpaper: wp)
+        .fullScreenCover(item: $fullscreenDestination) { destination in
+            switch destination {
+
+            case .image(let url):
+                ShopImageFullscreenView(imageURL: url)
+
+            case .fullDetails(let wp):
+                ShopFullDetailsView(
+                    wallpaper: wp,
+                    onTagSelected: { tag in
+                        vm.filters.query = tag
+                        Task { await vm.resetAndReload() }
+                    }
+                )
+            }
+        }
+        .overlay {
+
+            ZStack {
+
+                // 🔝 TOP: Download status banner
+                if downloadStatus != .idle {
+                    VStack {
+                        DownloadStatusBanner(
+                            status: downloadStatus,
+                            onDismiss: {
+                                withAnimation {
+                                    downloadStatus = .idle
+                                }
+                            }
+                        )
+                        .padding(.top, 8)
+
+                        Spacer()
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(2)
+                }
+
+                // 🔽 BOTTOM: Action sheet
+                if showActionSheet, let wp = selectedWallpaper {
+                    VStack {
+                        Spacer()
+
+                        ShopActionSheet(
+                            wallpaper: wp,
+                            hasAPIKey: ShopPreferences.shared.hasWallhavenKey,
+                            onSelect: { action in
+                                showActionSheet = false
+                                handleAction(action, wallpaper: wp)
+                            },
+                            onDismiss: {
+                                showActionSheet = false
+                            }
+                        )
+                    }
+                    .transition(.move(edge: .bottom))
+                    .zIndex(1)
                 }
             }
         }
-        .overlay(alignment: .bottom) {
-            if showActionSheet, let wp = selectedWallpaper {
-                ShopActionSheet(
-                    wallpaper: wp,
-                    hasAPIKey: ShopPreferences.shared.hasWallhavenKey,
-                    onSelect: { action in
-                        showActionSheet = false
-                        handleAction(action, wallpaper: wp)
-                    },
-                    onDismiss: {
-                        showActionSheet = false
+        .animation(.easeInOut, value: downloadStatus)
+        .animation(.easeOut, value: showActionSheet)
+        .onChange(of: downloadStatus) { newStatus in
+            dismissTask?.cancel()
+
+            guard newStatus.shouldAutoDismiss else { return }
+
+            dismissTask = Task {
+                try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+                await MainActor.run {
+                    withAnimation {
+                        downloadStatus = .idle
                     }
-                )
-                .transition(.move(edge: .bottom))
+                }
             }
         }
-        .animation(.easeOut, value: showActionSheet)
         .sheet(isPresented: $showFilters) {
             ShopFilterView(
                 filters: $vm.filters,
@@ -146,30 +208,102 @@ struct ShopView: View {
         switch action {
 
         case .download:
-//            ImageDownloader.saveToPhotos(url: wallpaper.fullURL)
-            ImageSaveManager.save(imageURL:wallpaper.fullURL, status: { newStatus in
-                downloadStatus = newStatus
-            })
-
+//            ImageSaveManager.save(
+//                imageURL: wallpaper.fullURL,
+//                status: { newStatus in
+//                    downloadStatus = newStatus
+//                }
+//            )
+            ImageSaveManager.save(
+                    imageURL: wallpaper.fullURL,
+                    status: { downloadStatus = $0 }
+            )
         case .share:
             ShareManager.share(url: wallpaper.fullURL)
 
         case .showOriginal:
-//            fullscreenWallpaper = wallpaper
-//            showFullscreen = true
             if ShopPreferences.shared.hasWallhavenKey {
-                // 🔑 API key → rich view
-                fullscreenWallpaper = wallpaper
-                showFullscreen = true   // opens ShopFullDetailsView
+                fullscreenDestination = .fullDetails(wallpaper)
             } else {
-                // 🚫 No key → image-only fullscreen
-                fullscreenWallpaper = wallpaper
-                showFullscreen = true   // opens ShopFullscreenView
+                fullscreenDestination = .image(wallpaper.fullURL)
             }
-
         case .details:
             detailsWallpaper = wallpaper
             showDetails = true
+        }
+    }
+
+}
+
+struct DownloadStatusBanner: View {
+
+    let status: DownloadStatus
+    let onDismiss: () -> Void
+
+    var body: some View {
+            HStack(spacing: 12) {
+
+                ProgressView()
+                    .opacity(status == .downloading ? 1 : 0)
+
+                Text(status.label)
+                    .font(.caption)
+                    .lineLimit(1)
+
+                Spacer()
+
+                Button {
+                    onDismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.caption2)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .shadow(radius: 8)
+            .padding(.horizontal)
+    }
+
+    private var icon: some View {
+        Group {
+            switch status {
+            case .downloading:
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+
+            case .downloaded:
+                Image(systemName: "checkmark.circle.fill")
+
+            case .saved:
+                Image(systemName: "photo.fill")
+
+            case .failed:
+                Image(systemName: "exclamationmark.triangle.fill")
+                
+            case .saving:
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+                
+            case .idle:
+                EmptyView()
+            }
+        }
+        .foregroundColor(.white)
+    }
+
+    private var backgroundColor: Color {
+        switch status {
+        case .failed:
+            return .red.opacity(0.9)
+        case .downloading:
+            return .black.opacity(0.85)
+        default:
+            return .green.opacity(0.9)
         }
     }
 }

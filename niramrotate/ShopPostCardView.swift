@@ -47,13 +47,19 @@ struct ShopPostCardView: View {
 
     let wallpaper: ShopWallpaper
     let onOptionsTap: (ShopWallpaper) -> Void
+    let onImageTap: (ShopWallpaper) -> Void   // 🔑 NEW
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
 
             titleRow
             headerRow
+
             imageSection
+                .onTapGesture {
+                    onImageTap(wallpaper)   // 🔥 delegate to parent
+                }
+
             preFooter
         }
         .padding()
@@ -61,6 +67,8 @@ struct ShopPostCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .padding(.horizontal)
     }
+
+    // MARK: - Subviews (unchanged)
 
     private var titleRow: some View {
         HStack {
@@ -99,7 +107,6 @@ struct ShopPostCardView: View {
 
     private var imageSection: some View {
         ZStack(alignment: .topLeading) {
-
             ProgressiveImageView(
                 previewURL: wallpaper.previewURL,
                 fullURL: wallpaper.fullURL,

@@ -32,4 +32,14 @@ enum DownloadStatus: Equatable {
             return message
         }
     }
+    
+    var shouldAutoDismiss: Bool {
+        switch self {
+        case .downloaded, .saved, .failed:
+            return true
+        default:
+            return false
+        }
+    }    
 }
+

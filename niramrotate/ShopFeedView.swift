@@ -34,8 +34,10 @@ struct ShopFeedView: View {
 
     let wallpapers: [ShopWallpaper]
     let hasMorePages: Bool
+
     let onReachBottom: () -> Void
     let onOptionsTap: (ShopWallpaper) -> Void
+    let onImageTap: (ShopWallpaper) -> Void
     let onTagTap: (String) -> Void
     let resetAndReload: () async -> Void
 
@@ -46,7 +48,8 @@ struct ShopFeedView: View {
                 ForEach(wallpapers) { wp in
                     ShopPostCardView(
                         wallpaper: wp,
-                        onOptionsTap: onOptionsTap
+                        onOptionsTap: { _ in onOptionsTap(wp) },
+                        onImageTap: { _ in onImageTap(wp) }
                     )
                 }
 
@@ -75,3 +78,4 @@ struct ShopFeedView: View {
         }
     }
 }
+

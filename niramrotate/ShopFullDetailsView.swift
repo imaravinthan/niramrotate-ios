@@ -66,6 +66,9 @@ struct ShopFullDetailsView: View {
         .onAppear {
             loadDetailsIfNeeded()
         }
+        .fullScreenCover(isPresented: $showFullscreenImage) {
+            ShopImageFullscreenView(imageURL: wallpaper.fullURL)
+        }
         .sheet(isPresented: $showSavePicker) {
             if let tempDownloadURL {
                 FileSavePicker(fileURL: tempDownloadURL) { success in
@@ -193,9 +196,9 @@ struct ShopFullDetailsView: View {
                     .onTapGesture {
                         showFullscreenImage = true
                     }
-                    .contextMenu {
-                        imageActions
-                    }
+//                    .contextMenu {
+//                        imageActions
+//                    }
 
             case .failure:
                 failedView
