@@ -102,7 +102,6 @@ struct ShopFullDetailsView: View {
     private func loadDetailsIfNeeded() {
         Task {
             do {
-//                let key = try await WallhavenKeyStore.loadSilently()
                 guard let key = WallhavenKeyManager.shared.getKeySilently() else {
                     throw NSError(domain: "No API key", code: 401)
                 }
@@ -142,18 +141,10 @@ struct ShopFullDetailsView: View {
     private func detailsSection(_ details: ShopWallpaperDetails) -> some View {
         VStack(alignment: .leading, spacing: 12) {
 
-//            Text("Uploaded by \(details.uploaderName)")
-//                .font(.headline)
-
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack {
                     ForEach(details.tags) { tag in
-                        Text(tag.name)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(.secondary.opacity(0.15))
-                            .clipShape(Capsule())
+                        TagChip(tag: tag)
                     }
                 }
             }
@@ -196,9 +187,6 @@ struct ShopFullDetailsView: View {
                     .onTapGesture {
                         showFullscreenImage = true
                     }
-//                    .contextMenu {
-//                        imageActions
-//                    }
 
             case .failure:
                 failedView
@@ -340,15 +328,11 @@ struct ShopFullDetailsView: View {
                     Button {
                         handleTagTap(tag)
                     } label: {
-                        Text(tag.name)
-                            .font(.caption)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(.secondary.opacity(0.15))
-                            .clipShape(Capsule())
+                        TagChip(tag: tag)
                     }
                     .buttonStyle(.plain)
                 }
+
             }
         }
     }
@@ -365,12 +349,7 @@ struct TagWrapView: View {
             Button {
                 onTap(tag)
             } label: {
-                Text(tag.name)
-                    .font(.caption)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.secondary.opacity(0.15))
-                    .clipShape(Capsule())
+                TagChip(tag: tag)
             }
         }
     }
@@ -431,13 +410,56 @@ struct TagFlowLayout: View {
         Button {
             onTap(tag)
         } label: {
-            Text(tag.name)
-                .font(.caption)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.secondary.opacity(0.15))
-                .clipShape(Capsule())
+            TagChip(tag: tag)
         }
         .buttonStyle(.plain)
     }
+
 }
+
+
+
+struct TagChip: View {
+
+    let tag: ShopTag
+
+    var body: some View {
+        Text(tag.name)
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .foregroundStyle(.primary)
+            .background(background)
+            .clipShape(Capsule())
+    }
+
+    private var background: Color {
+        tag.purityType?.background ?? Color.secondary.opacity(0.15)
+    }
+}
+
+
+
+
+enum TagPurity: String {
+    case sfw
+    case nsfw
+    case sketchy
+
+    var color: Color {
+        switch self {
+        case .sfw:     return .green
+        case .nsfw:    return .red
+        case .sketchy: return .orange
+        }
+    }
+
+    var background: Color {
+        color.opacity(0.18)
+    }
+
+    var label: String {
+        rawValue.uppercased()
+    }
+}
+

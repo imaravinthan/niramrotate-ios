@@ -144,6 +144,7 @@ struct ShopTag: Identifiable, Hashable {
     let category: String
     let purity: String
 }
+
 struct ShopWallpaperDetails: Identifiable {
 
     let id: String
@@ -222,6 +223,10 @@ private struct DetailItem: Decodable {
         let name: String
         let category: String
         let purity: String
+        
+        var purityType: TagPurity? {
+                TagPurity(rawValue: purity.lowercased())
+        }
     }
 
     func toDetails() -> ShopWallpaperDetails {
@@ -239,5 +244,12 @@ private struct DetailItem: Decodable {
             },
             source: source.isEmpty ? nil : source
         )
+    }
+}
+
+extension ShopTag {
+
+    var purityType: TagPurity? {
+        TagPurity(rawValue: purity.lowercased())
     }
 }
